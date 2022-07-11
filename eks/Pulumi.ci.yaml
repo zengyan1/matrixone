@@ -1,0 +1,18 @@
+config:
+  aws:region: us-west-2
+  eks:adminUsers:
+  - wuyelei
+  - wanglei
+  - qinshuqi
+  - jinqinghui
+  eks:workers:
+  - name: arm
+    instanceType: t4g.large
+    # ref: https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html
+    amiId: ami-0bea0f4e1d10dcca7
+    spotPrice: "0.03"
+    minSize: 0
+    maxSize: 5
+    labels:
+      arch: arm64
+    

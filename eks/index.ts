@@ -11,12 +11,11 @@ const prefix = `${pulumi.getProject()}-${pulumi.getStack()}`
 
 // optional knobs
 const k8sVersion = config.get("k8sVersion") || "1.22";
-const numberAZs = config.getNumber("numberAZs") || 3;
 const adminRoles = config.getObject<string[]>("adminRoles") || [];
 
 // account information
 const current = aws.getCallerIdentity();
-const accountId = current.then((c) => c.accountId);
+export const accountId = current.then((c) => c.accountId);
 
 interface WorkerGroup {
     name: string
@@ -115,6 +114,11 @@ k8s.then(v => workers.map(worker =>
         instanceProfile: nodeProfile,
     })
 ))
+
+export const oidcProvider = k8s.then(v => v.core.oidcProvider!.url);
+// export kubeconfig is safe even if the pulumi credential is compromised since the
+// EKS kubeconfig requires user's AWS credential of perform AuthN & AuthZ
+export const kubeconfig = k8s.then(v => v.kubeconfig.apply(JSON.stringify));
 
 // utilities
 function createUserMappings(users: string[]): eks.UserMapping[] {

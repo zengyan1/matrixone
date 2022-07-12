@@ -1,2 +1,23 @@
 # ops
+
 Confidently operate our production via git
+
+## Process
+
+1. clone this repository;
+2. checkout your local development branch;
+3. make some changes as you like;
+4. file an pull request and check the pulumi preview;
+5. get someone with write access approving your PR;
+6. merge the pull request and your change will be applied to the target environment shortly.
+
+## Projects and Stacks
+
+Refer to [Projects and Stacks](https://www.pulumi.com/docs/intro/pulumi-service/projects-and-stacks/) for the explanations of `Project` and `Stack`, here are the projects and stacks this repo manages:
+
+- [eks](./eks): manage EKS clusters, each stack is corresponding to an EKS cluster, well-known stacks:
+  - [eks/ci](./eks/Pulumi.ci.yaml): the EKS cluster for CICD;
+- [cicd](./cicd): manage CICD environments, each stack is corresponding to an CI environment, well-known stacks:
+  - [cicd/aws](./cicd/Pulumi.aws.yaml): the default CI environment on AWS;
+- [iam](./iam): manage IAM policies in different environment, each stack is corresponding to a target environment, well-known stacks:
+  - [iam/dev](./iam/Pulumi.dev.yaml): manage the IAM policies in dev environment;

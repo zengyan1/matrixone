@@ -5,6 +5,8 @@ config:
   - wanglei
   - qinshuqi
   - jinqinghui
+  eks:adminRoles:
+  - cicd-aws-role
   eks:workers:
   - name: arm
     instanceType: t4g.large

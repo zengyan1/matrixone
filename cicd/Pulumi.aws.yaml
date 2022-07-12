@@ -1,5 +1,6 @@
 config:
   aws:region: us-west-2
   cicd:eks: mo-pulumi-org/eks/ci
+  # TODO(aylei): currently using aylei's personal token, which can only manage several repos
   cicd:githubToken:
     secure: AAABAMdzu+i16XFGCuzFVFYtTgkv3fug1L5gWwCdiNVVesobIci15vkj+GmOKsqxDqJw1nnmdNb1SbP6MEeKEgGQqSJISJtR

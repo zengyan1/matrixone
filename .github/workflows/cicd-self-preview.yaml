@@ -2,9 +2,6 @@ name: CICD
 on:
   - pull_request
 
-defaults:
-  run:
-    working-directory: ./cicd
 jobs:
   preview:
     name: Preview
@@ -15,9 +12,13 @@ jobs:
         with:
           node-version: 14.x
       - run: npm install
+        working-directory: ./cicd
       - uses: pulumi/actions@v3
         with:
           command: preview
           stack-name: aws
+          work-dir: ./cicd
+          comment-on-pr: true
         env:
+          # TODO: only configured in `matrixorigin/ops`, we need an org level one
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}

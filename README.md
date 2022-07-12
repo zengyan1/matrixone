@@ -21,3 +21,10 @@ Refer to [Projects and Stacks](https://www.pulumi.com/docs/intro/pulumi-service/
   - [cicd/aws](./cicd/Pulumi.aws.yaml): the default CI environment on AWS;
 - [iam](./iam): manage IAM policies in different environment, each stack is corresponding to a target environment, well-known stacks:
   - [iam/dev](./iam/Pulumi.dev.yaml): manage the IAM policies in dev environment;
+
+## Access Clusters
+
+1. Make sure you have added yourself to the `adminUsers` (maybe we need more groups later with fine-grained permissions) of the target cluster, e.g. [eks/ci](./eks/Pulumi.ci.yaml);
+2. Find the cluster via `aws eks list-clusters --region ${region}`, you can find the region in the pulumi config of the target cluster, e.g. [eks/ci](./eks/Pulumi.ci.yaml);
+3. Save the kubeconfig via `aws eks --region ${region} update-kubeconfig --name ${cluster-name} --kubeconfig ${file}`;
+4. `export KUBECONFIG=$PWD/${file}` and you are good to go.

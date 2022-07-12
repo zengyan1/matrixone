@@ -28,11 +28,6 @@ const inlinePolicy: aws.iam.PolicyDocument = {
             Resource: "*",
         },
         {
-            Action: ["secretsmanager:*"],
-            Effect: "Allow",
-            Resource: "*",
-        },
-        {
             Action: ["route53:*"],
             Effect: "Allow",
             Resource: "*",
@@ -54,6 +49,11 @@ const inlinePolicy: aws.iam.PolicyDocument = {
         },
         {
             Action: ["sts:*"],
+            Effect: "Allow",
+            Resource: "*",
+        },
+        {
+            Action: ["ssm:*"],
             Effect: "Allow",
             Resource: "*",
         },
@@ -170,7 +170,9 @@ const armRunner = new k8s.apiextensions.CustomResource("arm-runner", {
     spec: {
         template: {
             spec: {
-                organization: "matrixorigin",
+                // TODO: change to org level runner once we use a token with org-level permission
+                // organization: "matrixorigin",
+                repository: "matrixorigin/ops",
                 labels: ["arm64-runner"],
                 serviceAccountName: sa.metadata.name,
                 nodeSelector: {

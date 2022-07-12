@@ -60,9 +60,9 @@ const vpc = new awsx.ec2.Vpc(`${prefix}-vpc`, {
 const allSubnets = Promise.all([
     vpc.privateSubnetIds,
     vpc.publicSubnetIds,
-  ]).then(([privateIds, publicIds]) => {
+]).then(([privateIds, publicIds]) => {
     return privateIds.concat(publicIds);
-  });
+});
 
 const k8s = allSubnets.then(subNets =>
     new eks.Cluster(`${prefix}-eks`, {
@@ -77,10 +77,22 @@ const k8s = allSubnets.then(subNets =>
         version: k8sVersion,
         userMappings: createUserMappings(adminUsers),
         roleMappings: createRoleMappings(adminRoles),
+        instanceRole: nodeRole,
         enabledClusterLogTypes: ["api", "authenticator", "scheduler", "controllerManager", "audit"],
         tags: tags,
     })
 )
+
+const nodeRole = createRole(`${prefix}-node-role`, [
+    "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy",
+    "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy",
+    "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly",
+    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+]);
+
+const nodeProfile = new aws.iam.InstanceProfile(`${prefix}-node-profile`, {
+    role: nodeRole,
+});
 
 k8s.then(v => workers.map(worker =>
     v.createNodeGroup(`${prefix}-${worker.name}`, {
@@ -100,7 +112,7 @@ k8s.then(v => workers.map(worker =>
             "CloudFormationGroupTag": "true",
             "k8s.io/cluster-autoscaler/enabled": "true",
         },
-        instanceProfile: new aws.iam.InstanceProfile(`${prefix}-${worker.name}`, { role: "EKSWorkerNodeRole" })
+        instanceProfile: nodeProfile,
     })
 ))
 
@@ -129,4 +141,23 @@ function createRoleMappings(roles: string[]): eks.RoleMapping[] {
         mappings.push(mapping);
     }
     return mappings;
+}
+
+function createRole(name: string, policies: string[]): aws.iam.Role {
+    const role = new aws.iam.Role(name, {
+        assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({
+            Service: "ec2.amazonaws.com",
+        }),
+    });
+
+    let counter = 0;
+    for (const policy of policies) {
+        // Create RolePolicyAttachment without returning it.
+        const rpa = new aws.iam.RolePolicyAttachment(
+            `${name}-policy-${counter++}`,
+            { policyArn: policy, role: role },
+        );
+    }
+
+    return role;
 }

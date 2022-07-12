@@ -17,4 +17,4 @@ config:
     maxSize: 5
     labels:
       arch: arm64
-    
+ 

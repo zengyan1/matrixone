@@ -171,8 +171,8 @@ const armRunner = new k8s.apiextensions.CustomResource("arm-runner", {
         template: {
             spec: {
                 // TODO: change to org level runner once we use a token with org-level permission
-                // organization: "matrixorigin",
-                repository: "matrixorigin/ops",
+                organization: "matrixorigin",
+                // repository: "matrixorigin/ops",
                 labels: ["arm64-runner", "eks"],
                 serviceAccountName: sa.metadata.name,
                 nodeSelector: {
@@ -180,7 +180,13 @@ const armRunner = new k8s.apiextensions.CustomResource("arm-runner", {
                 },
                 // TODO: customize more fields, ref: https://github.com/actions-runner-controller/actions-runner-controller#additional-tweaks
                 // image: 
-                // resources:
+                resources:
+		    limits:
+          	        cpu: "2.0"
+                        memory: "7Gi"
+                requests:
+                    cpu: "1.0"
+                    memory: "2Gi"
                 // sidecar
             },
         },

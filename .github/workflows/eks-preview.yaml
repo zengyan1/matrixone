@@ -8,6 +8,7 @@ jobs:
   preview:
     runs-on: arm64-runner
     steps:
+    - uses: actions/checkout@v3
     - uses: ./.github/actions/preview
       with:
         dir: eks

@@ -14,7 +14,7 @@ config:
     amiId: ami-0bea0f4e1d10dcca7
     spotPrice: "0.03"
     minSize: 0
-    maxSize: 5
+    maxSize: 6
     labels:
       arch: arm64
  

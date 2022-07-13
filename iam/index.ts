@@ -1,7 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
-interface awsGroup {
+interface AwsGroup {
   group: string;
   users: string[];
   policy: aws.iam.PolicyDocument;
@@ -9,7 +9,7 @@ interface awsGroup {
 }
 
 const config = new pulumi.Config();
-const awsGroups = config.requireObject<awsGroup[]>("awsGroups");
+const awsGroups = config.requireObject<AwsGroup[]>("awsGroups");
 // const prefix = `${pulumi.getProject()}-${pulumi.getStack()}`
 
 awsGroups.map((g) => {
@@ -28,7 +28,7 @@ awsGroups.map((g) => {
   let counter = 0;
   g.rolePolicies?.forEach(
     (rp) =>
-      new aws.iam.GroupPolicyAttachment(`${g.group}}-attach-${counter++}`, {
+      new aws.iam.GroupPolicyAttachment(`${g.group}-attach-${counter++}`, {
         policyArn: rp,
         group: group.name,
       })

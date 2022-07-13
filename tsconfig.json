@@ -15,5 +15,5 @@
     "forceConsistentCasingInFileNames": true,
     "downlevelIteration": true
   },
-  "files": ["cicd/*.ts", "iam/*.ts", "eks/*.ts"]
+  "files": ["index.ts"]
 }

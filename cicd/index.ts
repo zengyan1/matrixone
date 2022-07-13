@@ -202,7 +202,8 @@ const armRunner = new k8s.apiextensions.CustomResource(
           nodeSelector: {
             "beta.kubernetes.io/arch": "arm64",
           },
-          // TODO: customize more fields, ref: https://github.com/actions-runner-controller/actions-runner-controller#additional-tweaks
+          // TODO: customize more fields
+          // ref: https://github.com/actions-runner-controller/actions-runner-controller#additional-tweaks
           // image:
           resources: {
             limits: {

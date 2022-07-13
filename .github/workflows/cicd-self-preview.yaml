@@ -1,18 +1,23 @@
-name: CICD
+name: CICD Preview
 on:
   pull_request:
     paths:
     - 'cicd/**'
 
 jobs:
-  preview:
-    runs-on: arm64-runner
+  aws:
+    runs-on: eks
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v2
       with:
         node-version: 14.x
-    - run: npm install
+    - uses: unfor19/install-aws-cli-action@v1.0.3
+      with:
+        version: 2
+        arch: arm64
+    - run: npm install && make reviewable
+      working-directory: cicd
     - uses: pulumi/actions@v3
       with:
         command: preview

@@ -1,6 +1,6 @@
 # ops
 
-Confidently operate our production via git
+Confidently operate our production via git.
 
 ## Process
 

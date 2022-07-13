@@ -173,7 +173,7 @@ const armRunner = new k8s.apiextensions.CustomResource("arm-runner", {
                 // TODO: change to org level runner once we use a token with org-level permission
                 // organization: "matrixorigin",
                 repository: "matrixorigin/ops",
-                labels: ["arm64-runner"],
+                labels: ["arm64-runner", "eks"],
                 serviceAccountName: sa.metadata.name,
                 nodeSelector: {
                     "beta.kubernetes.io/arch": "arm64",

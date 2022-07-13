@@ -266,7 +266,7 @@ const pulumiRunner = new k8s.apiextensions.CustomResource(
           organization: "matrixorigin",
           labels: ["pulumi"],
           serviceAccountName: sa.metadata.name,
-          image: "pulumi/actions:v3.12.0",
+          image: "aylei/pulumi-runner:3.35.3",
           resources: {
             limits: {
               cpu: "1.0",

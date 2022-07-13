@@ -239,10 +239,7 @@ const armRunnerScaling = new k8s.apiextensions.CustomResource(
       scaleUpTriggers: [
         {
           githubEvent: {
-            checkRun: {
-              types: ["created"],
-              status: "queued",
-            },
+            workflowJob: {},
           },
           amount: 1,
           duration: "5m",
@@ -296,6 +293,10 @@ const pulumiRunnerScaling = new k8s.apiextensions.CustomResource(
       namespace: ns.metadata.name,
     },
     spec: {
+      containers: [{
+        name: "runner",
+        command: ["tail", "-f", "/dev/null"]
+      }],
       scaleDownDelaySecondsAfterScaleOut: 300,
       minReplicas: 0,
       maxReplicas: 5,
@@ -305,10 +306,7 @@ const pulumiRunnerScaling = new k8s.apiextensions.CustomResource(
       scaleUpTriggers: [
         {
           githubEvent: {
-            checkRun: {
-              types: ["created"],
-              status: "queued",
-            },
+            workflowJob: {},
           },
           amount: 1,
           duration: "5m",

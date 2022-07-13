@@ -1,11 +1,13 @@
 name: CICD
 on:
-  pull_request:
+  push:
+    branches:
+    - main
     paths:
     - 'cicd/**'
 
 jobs:
-  preview:
+  up:
     runs-on: arm64-runner
     steps:
     - uses: actions/checkout@v3
@@ -16,9 +18,8 @@ jobs:
       working-directory: cicd
     - uses: pulumi/actions@v3
       with:
-        command: preview
+        command: up
         stack-name: aws
         work-dir: cicd
-        comment-on-pr: true
       env:
         PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}

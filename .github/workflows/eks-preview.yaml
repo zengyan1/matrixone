@@ -1,8 +1,8 @@
-name: CICD
+name: EKS
 on:
   pull_request:
     paths:
-    - 'cicd/**'
+    - 'eks/**'
 
 jobs:
   preview:
@@ -13,12 +13,13 @@ jobs:
       with:
         node-version: 14.x
     - run: npm install
-      working-directory: cicd
+      working-directory: eks
     - uses: pulumi/actions@v3
       with:
         command: preview
-        stack-name: aws
-        work-dir: cicd
+        stack-name: ci
+        work-dir: eks
         comment-on-pr: true
       env:
         PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+

@@ -11,7 +11,15 @@ jobs:
     runs-on: arm64-runner
     steps:
     - uses: actions/checkout@v3
-    - uses: ./.github/actions/up
+    - uses: actions/setup-node@v2
       with:
-        dir: cicd
-        stack: aws
+        node-version: 14.x
+    - run: npm install
+      working-directory: cicd
+    - uses: pulumi/actions@v3
+      with:
+        command: up
+        stack-name: aws
+        work-dir: cicd
+      env:
+        PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}

@@ -9,8 +9,17 @@ jobs:
     runs-on: arm64-runner
     steps:
     - uses: actions/checkout@v3
-    - uses: ./.github/actions/preview
+    - uses: actions/setup-node@v2
       with:
-        dir: eks
-        stack: ci
+        node-version: 14.x
+    - run: npm install
+      working-directory: eks
+    - uses: pulumi/actions@v3
+      with:
+        command: preview
+        stack-name: ci
+        work-dir: eks
+        comment-on-pr: true
+      env:
+        PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
 

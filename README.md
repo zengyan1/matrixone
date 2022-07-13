@@ -7,9 +7,10 @@ Confidently operate our production via git
 1. clone this repository;
 2. checkout your local development branch;
 3. make some changes as you like;
-4. file an pull request and check the pulumi preview;
-5. get someone with write access approving your PR;
-6. merge the pull request and your change will be applied to the target environment shortly.
+4. run `make reviewable` before you open an PR;
+5. file an pull request and check the pulumi preview;
+6. get someone with write access approving your PR;
+7. merge the pull request and your change will be applied to the target environment shortly.
 
 ## Projects and Stacks
 

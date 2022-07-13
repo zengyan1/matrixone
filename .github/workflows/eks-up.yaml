@@ -14,6 +14,9 @@ jobs:
     - uses: actions/setup-node@v2
       with:
         node-version: 14.x
+    - uses: unfor19/install-aws-cli-action@v1.0.3
+      with:
+        arch: arm64
     - run: npm install
       working-directory: eks
     - uses: pulumi/actions@v3

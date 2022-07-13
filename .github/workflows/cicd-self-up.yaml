@@ -18,7 +18,6 @@ jobs:
       with:
         arch: arm64
     - run: npm install
-      working-directory: cicd
     - uses: pulumi/actions@v3
       with:
         command: up

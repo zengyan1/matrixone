@@ -18,7 +18,6 @@ jobs:
       with:
         arch: arm64
     - run: npm install
-      working-directory: eks
     - uses: pulumi/actions@v3
       with:
         command: up

@@ -1,8 +1,8 @@
-name: CICD
+name: EKS
 on:
   pull_request:
     paths:
-    - 'cicd/**'
+    - 'eks/**'
 
 jobs:
   preview:
@@ -10,5 +10,6 @@ jobs:
     steps:
     - uses: ./.github/actions/preview
       with:
-        dir: cicd
-        stack: aws
+        dir: eks
+        stack: ci
+

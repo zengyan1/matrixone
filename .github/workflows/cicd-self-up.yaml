@@ -1,14 +1,16 @@
 name: CICD
 on:
-  pull_request:
+  push:
+    branches:
+    - main
     paths:
     - 'cicd/**'
 
 jobs:
-  preview:
+  up:
     runs-on: arm64-runner
     steps:
-    - uses: ./.github/actions/preview
+    - uses: ./.github/actions/up
       with:
         dir: cicd
         stack: aws

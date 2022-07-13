@@ -180,13 +180,16 @@ const armRunner = new k8s.apiextensions.CustomResource("arm-runner", {
                 },
                 // TODO: customize more fields, ref: https://github.com/actions-runner-controller/actions-runner-controller#additional-tweaks
                 // image: 
-                resources:
-		    limits:
-          	        cpu: "2.0"
+                resources: {
+		    limits: {
+          	        cpu: "2.0",
                         memory: "7Gi"
-                requests:
-                    cpu: "1.0"
-                    memory: "2Gi"
+		    },
+		    requests: {
+	       	        cpu: "1.0",
+			memory: "2Gi"
+		    }
+		}
                 // sidecar
             },
         },

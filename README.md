@@ -29,3 +29,7 @@ Refer to [Projects and Stacks](https://www.pulumi.com/docs/intro/pulumi-service/
 2. Find the cluster via `aws eks list-clusters --region ${region}`, you can find the region in the pulumi config of the target cluster, e.g. [eks/ci](./eks/Pulumi.ci.yaml);
 3. Save the kubeconfig via `aws eks --region ${region} update-kubeconfig --name ${cluster-name} --kubeconfig ${file}`;
 4. `export KUBECONFIG=$PWD/${file}` and you are good to go.
+
+## Index
+
+- [Configure CICD environment (self-hosted github runner)](./cicd/README.md)

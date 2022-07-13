@@ -252,3 +252,69 @@ const armRunnerScaling = new k8s.apiextensions.CustomResource(
   },
   { provider: baseEKSProvider, dependsOn: [arc, sa] }
 );
+
+// pulumi runners
+const pulumiRunner = new k8s.apiextensions.CustomResource(
+  "pulumi-runner",
+  {
+    apiVersion: "actions.summerwind.dev/v1alpha1",
+    kind: "RunnerDeployment",
+    metadata: {
+      name: "pulumi-runner",
+      namespace: ns.metadata.name,
+    },
+    spec: {
+      template: {
+        spec: {
+          organization: "matrixorigin",
+          labels: ["pulumi"],
+          serviceAccountName: sa.metadata.name,
+          image: "pulumi/pulumi:3.35.3",
+          resources: {
+            limits: {
+              cpu: "1.0",
+              memory: "2Gi",
+            },
+            requests: {
+              cpu: "50m",
+              memory: "200Mi",
+            },
+          },
+        },
+      },
+    },
+  },
+  { provider: baseEKSProvider, dependsOn: [arc, sa] }
+);
+const pulumiRunnerScaling = new k8s.apiextensions.CustomResource(
+  "pulumi-runner",
+  {
+    apiVersion: "actions.summerwind.dev/v1alpha1",
+    kind: "HorizontalRunnerAutoscaler",
+    metadata: {
+      name: "pulumi-runner",
+      namespace: ns.metadata.name,
+    },
+    spec: {
+      scaleDownDelaySecondsAfterScaleOut: 300,
+      minReplicas: 0,
+      maxReplicas: 5,
+      scaleTargetRef: {
+        name: pulumiRunner.metadata.name,
+      },
+      scaleUpTriggers: [
+        {
+          githubEvent: {
+            checkRun: {
+              types: ["created"],
+              status: "queued",
+            },
+          },
+          amount: 1,
+          duration: "5m",
+        },
+      ],
+    },
+  },
+  { provider: baseEKSProvider, dependsOn: [arc, sa] }
+);

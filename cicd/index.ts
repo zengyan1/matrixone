@@ -195,7 +195,7 @@ const armRunnerScaling = new k8s.apiextensions.CustomResource("arm-runner", {
     },
     spec: {
         minReplicas: 0,
-        maxReplicas: 10,
+        maxReplicas: 12,
         scaleTargetRef: {
             name: armRunner.metadata.name,
         },

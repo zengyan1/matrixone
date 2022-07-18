@@ -6,6 +6,7 @@ config:
     - jinqinghui
     - wanglei
     - wuyelei
+    - qinshuqi
     policy:
       Version: '2012-10-17'
       Statement:
@@ -25,8 +26,36 @@ config:
     - arn:aws:iam::aws:policy/AmazonVPCFullAccess
     - arn:aws:iam::aws:policy/AmazonSSMFullAccess
     - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
+    - arn:aws:iam::aws:policy/AmazonS3FullAccess
     # Readonly permissions
     - arn:aws:iam::aws:policy/IAMReadOnlyAccess
     - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
     - arn:aws:iam::aws:policy/CloudWatchReadOnlyAccess
-    - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+  - group: EngineDev
+    users:
+    - wangjian
+    policy:
+      Version: '2012-10-17'
+      Statement:
+      - Sid: EKSFullAccess
+        Effect: Allow
+        Action:
+        - 'eks:*'
+        Resource: '*'
+      - Sid: AutoScalingFullAccess
+        Effect: Allow
+        Action:
+        - 'autoscaling:*'
+        Resource: '*'
+    rolePolicies:
+    # Write permissions
+    - arn:aws:iam::aws:policy/AmazonEC2FullAccess
+    - arn:aws:iam::aws:policy/AmazonVPCFullAccess
+    - arn:aws:iam::aws:policy/AmazonSSMFullAccess
+    - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
+    - arn:aws:iam::aws:policy/AmazonS3FullAccess
+    # Readonly permissions
+    - arn:aws:iam::aws:policy/IAMReadOnlyAccess
+    - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+    - arn:aws:iam::aws:policy/CloudWatchReadOnlyAccess
+    

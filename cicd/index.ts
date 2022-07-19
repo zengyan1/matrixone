@@ -232,8 +232,9 @@ const armRunnerScaling = new k8s.apiextensions.CustomResource(
       namespace: ns.metadata.name,
     },
     spec: {
-      minReplicas: 0,
-      maxReplicas: 12,
+      // keep at least 1 runner for avoid forever starving
+      minReplicas: 1,
+      maxReplicas: 20,
       scaleTargetRef: {
         name: armRunner.metadata.name,
       },
@@ -243,7 +244,9 @@ const armRunnerScaling = new k8s.apiextensions.CustomResource(
             workflowJob: {},
           },
           amount: 1,
-          duration: "5m",
+          // duration is the lease time of the compute resource requested by each workflow job,
+          // which means that the corresponding runner will run continuously for at least the lease time
+          duration: "30m",
         },
       ],
     },
@@ -294,10 +297,12 @@ const pulumiRunnerScaling = new k8s.apiextensions.CustomResource(
       namespace: ns.metadata.name,
     },
     spec: {
-      containers: [{
-        name: "runner",
-        command: ["tail", "-f", "/dev/null"]
-      }],
+      containers: [
+        {
+          name: "runner",
+          command: ["tail", "-f", "/dev/null"],
+        },
+      ],
       scaleDownDelaySecondsAfterScaleOut: 300,
       minReplicas: 0,
       maxReplicas: 5,

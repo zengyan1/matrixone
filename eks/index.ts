@@ -1,6 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";
 import * as eks from "@pulumi/eks";
+import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 
 // required configs
@@ -23,7 +24,7 @@ interface WorkerGroup {
   minSize: number;
   maxSize: number;
   amiId: string;
-  labels?: {
+  labels: {
     [key: string]: string;
   };
   spotPrice?: string;
@@ -63,7 +64,7 @@ const allSubnets = Promise.all([
   return privateIds.concat(publicIds);
 });
 
-const k8s = allSubnets.then(
+const k8sCluster = allSubnets.then(
   (subNets) =>
     new eks.Cluster(`${prefix}-eks`, {
       name: prefix,
@@ -100,8 +101,12 @@ const nodeProfile = new aws.iam.InstanceProfile(`${prefix}-node-profile`, {
   role: nodeRole,
 });
 
-k8s.then((v) =>
-  workers.map((worker) =>
+k8sCluster.then((v) => {
+  workers.map((worker) => {
+    const nodeLabels: aws.Tags = {};
+    for (const [lk, lv] of Object.entries(worker.labels)) {
+      nodeLabels[`k8s.io/cluster-autoscaler/node-template/label/${lk}`] = lv;
+    }
     v.createNodeGroup(`${prefix}-${worker.name}`, {
       instanceType: worker.instanceType,
       nodeAssociatePublicIpAddress: false,
@@ -114,20 +119,104 @@ k8s.then((v) =>
       autoScalingGroupTags: {
         "k8s.io/cluster-autoscaler/workload": `${prefix}-${worker.name}`,
         ...tags,
-      },
-      cloudFormationTags: {
         CloudFormationGroupTag: "true",
+        [`k8s.io/cluster-autoscaler/${prefix}`]: "owned",
         "k8s.io/cluster-autoscaler/enabled": "true",
+        ...nodeLabels,
       },
       instanceProfile: nodeProfile,
-    })
-  )
-);
+    });
+  });
 
-export const oidcProvider = k8s.then((v) => v.core.oidcProvider!.url);
+  const clusterAutoScalerSaName = "cluster-autoscaler";
+  const albSaAssumeRolePolicy = pulumi
+    .all([v.core.oidcProvider!.url, v.core.oidcProvider?.arn])
+    .apply(([url, arn]) =>
+      aws.iam.getPolicyDocument({
+        statements: [
+          {
+            actions: ["sts:AssumeRoleWithWebIdentity"],
+            conditions: [
+              {
+                test: "StringEquals",
+                values: [
+                  `system:serviceaccount:kube-system:${clusterAutoScalerSaName}`,
+                ],
+                variable: `${url.replace("https://", "")}:sub`,
+              },
+            ],
+            effect: "Allow",
+            principals: [
+              {
+                identifiers: [arn],
+                type: "Federated",
+              },
+            ],
+          },
+        ],
+      })
+    );
+
+  const clusterAutoScalerRole = new aws.iam.Role(`${prefix}-scaler`, {
+    assumeRolePolicy: albSaAssumeRolePolicy.json,
+  });
+
+  new aws.iam.RolePolicy(`${prefix}-scaler`, {
+    namePrefix: `${prefix}-scaler`,
+    role: clusterAutoScalerRole,
+    policy: {
+      Version: "2012-10-17",
+      Statement: [
+        {
+          Effect: "Allow",
+          Action: [
+            "autoscaling:DescribeAutoScalingGroups",
+            "autoscaling:DescribeAutoScalingInstances",
+            "autoscaling:DescribeLaunchConfigurations",
+            "autoscaling:DescribeTags",
+            "autoscaling:SetDesiredCapacity",
+            "autoscaling:TerminateInstanceInAutoScalingGroup",
+            "ec2:DescribeLaunchTemplateVersions",
+          ],
+          Resource: "*",
+        },
+      ],
+    },
+  });
+
+  const clusterAutoScalerSa = new k8s.core.v1.ServiceAccount(
+    clusterAutoScalerSaName,
+    {
+      metadata: {
+        namespace: "kube-system",
+        name: clusterAutoScalerSaName,
+        annotations: {
+          "eks.amazonaws.com/role-arn": clusterAutoScalerRole.arn,
+        },
+      },
+    },
+    { provider: v.provider }
+  );
+
+  new k8s.helm.v3.Chart(
+    "cluster-auto-scaler",
+    {
+      namespace: "kube-system",
+      values: {
+        clusterName: pulumi.interpolate`${v.eksCluster.name}`,
+      },
+      path: "./aws-cluster-auto-scaler",
+    },
+    { provider: v.provider, dependsOn: [clusterAutoScalerSa] }
+  );
+});
+
+export const oidcProvider = k8sCluster.then((v) => v.core.oidcProvider!.url);
 // export kubeconfig is safe even if the pulumi credential is compromised since the
 // EKS kubeconfig requires user's AWS credential of perform AuthN & AuthZ
-export const kubeconfig = k8s.then((v) => v.kubeconfig.apply(JSON.stringify));
+export const kubeconfig = k8sCluster.then((v) =>
+  v.kubeconfig.apply(JSON.stringify)
+);
 
 // utilities
 function createUserMappings(users: string[]): eks.UserMapping[] {

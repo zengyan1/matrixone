@@ -13,8 +13,10 @@ config:
     # ref: https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html
     amiId: ami-0bea0f4e1d10dcca7
     spotPrice: "0.03"
-    minSize: 0
-    maxSize: 6
+    # 2 for HA
+    minSize: 2
+    maxSize: 15
     labels:
       arch: arm64
+      beta.kubernetes.io/arch: arm64
  

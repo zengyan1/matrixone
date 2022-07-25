@@ -6,7 +6,7 @@ const config = new pulumi.Config();
 const githubToken = config.requireSecret("githubToken");
 // TODO: enable if we need to attach existing policy
 // const roles = config.requireObject<string[]>("roles");
-const arcVersion = config.get("arcVersion") || "0.20.1";
+const arcVersion = config.get("arcVersion") || "0.20.2";
 const certManagerVersion = config.get("certManagerVersion") || "v1.8.2";
 const prefix = `${pulumi.getProject()}-${pulumi.getStack()}`;
 const inlinePolicy: aws.iam.PolicyDocument = {

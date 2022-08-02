@@ -2,6 +2,27 @@ import * as aws from "@pulumi/aws";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 
+interface Runner {
+    name: string;
+    labels: string[];
+    minReplicas: number;
+    maxReplicas: number;
+    duration: string;
+    nodeSelector: {
+        [key: string]: string;
+    };
+    resources?: {
+        limits: {
+            cpu: string;
+            memory: string;
+        };
+        requests: {
+            cpu: string;
+            memory: string;
+        };
+    };
+}
+
 const config = new pulumi.Config();
 const githubToken = config.requireSecret("githubToken");
 // TODO: enable if we need to attach existing policy
@@ -9,6 +30,7 @@ const githubToken = config.requireSecret("githubToken");
 const arcVersion = config.get("arcVersion") || "0.20.2";
 const certManagerVersion = config.get("certManagerVersion") || "v1.8.2";
 const prefix = `${pulumi.getProject()}-${pulumi.getStack()}`;
+
 const inlinePolicy: aws.iam.PolicyDocument = {
   Version: "2012-10-17",
   Statement: [
@@ -254,71 +276,68 @@ const armRunnerScaling = new k8s.apiextensions.CustomResource(
   { provider: baseEKSProvider, dependsOn: [arc, sa] }
 );
 
-// pulumi runners
-const pulumiRunner = new k8s.apiextensions.CustomResource(
-  "pulumi-runner",
-  {
-    apiVersion: "actions.summerwind.dev/v1alpha1",
-    kind: "RunnerDeployment",
-    metadata: {
-      name: "pulumi-runner",
-      namespace: ns.metadata.name,
-    },
-    spec: {
-      template: {
+// mo-cloud runners
+const moCloudRunner = new k8s.apiextensions.CustomResource(
+    "mocloud-arm-runner",
+    {
+        apiVersion: "actions.summerwind.dev/v1alpha1",
+        kind: "RunnerDeployment",
+        metadata: {
+            name: "mocloud-arm-runner",
+            namespace: ns.metadata.name,
+        },
         spec: {
-          organization: "matrixorigin",
-          labels: ["pulumi"],
-          serviceAccountName: sa.metadata.name,
-          image: "aylei/pulumi-runner:3.35.3",
-          resources: {
-            limits: {
-              cpu: "1.0",
-              memory: "2Gi",
+            template: {
+                spec: {
+                    organization: "matrixone-cloud",
+                    labels: ["arm64-runner", "eks"],
+                    serviceAccountName: sa.metadata.name,
+                    nodeSelector: {
+                        "beta.kubernetes.io/arch": "arm64",
+                    },
+                    resources: {
+                        limits: {
+                            cpu: "2.0",
+                            memory: "7Gi",
+                        },
+                        requests: {
+                            cpu: "1.0",
+                            memory: "2Gi",
+                        },
+                    },
+                },
             },
-            requests: {
-              cpu: "50m",
-              memory: "200Mi",
-            },
-          },
         },
-      },
     },
-  },
-  { provider: baseEKSProvider, dependsOn: [arc, sa] }
+    { provider: baseEKSProvider, dependsOn: [arc, sa] }
 );
-const pulumiRunnerScaling = new k8s.apiextensions.CustomResource(
-  "pulumi-runner",
-  {
-    apiVersion: "actions.summerwind.dev/v1alpha1",
-    kind: "HorizontalRunnerAutoscaler",
-    metadata: {
-      name: "pulumi-runner",
-      namespace: ns.metadata.name,
-    },
-    spec: {
-      containers: [
-        {
-          name: "runner",
-          command: ["tail", "-f", "/dev/null"],
+const moCloudRunnerScaling = new k8s.apiextensions.CustomResource(
+    "mocloud-arm-runner-scaling",
+    {
+        apiVersion: "actions.summerwind.dev/v1alpha1",
+        kind: "HorizontalRunnerAutoscaler",
+        metadata: {
+            name: "mocloud-arm-runner-scaling",
+            namespace: ns.metadata.name,
         },
-      ],
-      scaleDownDelaySecondsAfterScaleOut: 300,
-      minReplicas: 0,
-      maxReplicas: 5,
-      scaleTargetRef: {
-        name: pulumiRunner.metadata.name,
-      },
-      scaleUpTriggers: [
-        {
-          githubEvent: {
-            workflowJob: {},
-          },
-          amount: 1,
-          duration: "5m",
+        spec: {
+            minReplicas: 1,
+            maxReplicas: 10,
+            scaleTargetRef: {
+                name: armRunner.metadata.name,
+            },
+            scaleUpTriggers: [
+                {
+                    githubEvent: {
+                        workflowJob: {},
+                    },
+                    amount: 1,
+                    // duration is the lease time of the compute resource requested by each workflow job,
+                    // which means that the corresponding runner will run continuously for at least the lease time
+                    duration: "30m",
+                },
+            ],
         },
-      ],
     },
-  },
-  { provider: baseEKSProvider, dependsOn: [arc, sa] }
+    { provider: baseEKSProvider, dependsOn: [arc, sa] }
 );

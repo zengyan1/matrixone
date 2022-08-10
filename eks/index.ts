@@ -209,6 +209,47 @@ k8sCluster.then((v) => {
     },
     { provider: v.provider, dependsOn: [clusterAutoScalerSa] }
   );
+
+  const csiSA = "ebs-csi-controller-sa";
+  const csiRole = new aws.iam.Role(`${prefix}-csi-driver`, {
+    namePrefix: `${prefix}-csi-drvier`,
+    managedPolicyArns: ["arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"],
+    assumeRolePolicy: pulumi.interpolate`{
+      "Version": "2012-10-17",
+      "Statement": [{
+        "Action": "sts:AssumeRoleWithWebIdentity",
+        "Principal": {
+          "Federated": "arn:aws:iam::${accountId}:oidc-provider/${v.core.oidcProvider!.url}"
+        },
+        "Effect": "Allow",
+        "Condition": {
+          "StringLike": {
+            "${v.core.oidcProvider!.url}:sub": "system:serviceaccount:*:${csiSA}"
+          }
+        }
+      }]
+    }`,
+  });
+
+  const csiDriver = new aws.eks.Addon("csi", {
+    addonName: "aws-ebs-csi-driver",
+    clusterName: v.eksCluster.name,
+    serviceAccountRoleArn: csiRole.arn,
+  });
+
+  const gp3Sc = new k8s.storage.v1.StorageClass("gp3", {
+    metadata: {
+      name: "gp3",
+    },
+    parameters: {
+      type: "gp3",
+    },
+    provisioner: "ebs.csi.aws.com",
+    reclaimPolicy: "Delete",
+    allowVolumeExpansion: true,
+    volumeBindingMode: "WaitForFirstConsumer",
+    mountOptions: ["nodelalloc", "noatime"],
+  }, {provider: v.provider});
 });
 
 export const oidcProvider = k8sCluster.then((v) => v.core.oidcProvider!.url);

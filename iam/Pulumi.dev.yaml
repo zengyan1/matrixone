@@ -20,6 +20,11 @@ config:
         Action:
         - 'autoscaling:*'
         Resource: '*'
+      - Sid: ECRFullAccess
+        Effect: Allow
+        Action:
+        - 'ecr:*'
+        Resource: '*'
     rolePolicies:
     # Write permissions
     - arn:aws:iam::aws:policy/AmazonEC2FullAccess

@@ -229,12 +229,12 @@ const armRunner = new k8s.apiextensions.CustomResource(
           // image:
           resources: {
             limits: {
-              cpu: "2.0",
-              memory: "7Gi",
+              cpu: "4.0",
+              memory: "14Gi",
             },
             requests: {
-              cpu: "1.0",
-              memory: "2Gi",
+              cpu: "2.0",
+              memory: "8Gi",
             },
           },
           // sidecar

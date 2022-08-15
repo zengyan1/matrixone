@@ -19,6 +19,16 @@ config:
     labels:
       arch: arm64
       beta.kubernetes.io/arch: arm64
+  - name: arm-xlarge
+    instanceType: t4g.xlarge
+    # ref: https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html
+    amiId: ami-0bea0f4e1d10dcca7
+    spotPrice: "0.05"
+    minSize: 1
+    maxSize: 10
+    labels:
+      arch: arm64
+      beta.kubernetes.io/arch: arm64
   - name: x86
     instanceType: t3.medium
     amiId: ami-064d458a449aebcf9

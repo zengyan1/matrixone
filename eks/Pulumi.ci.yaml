@@ -19,6 +19,7 @@ config:
     labels:
       arch: arm64
       beta.kubernetes.io/arch: arm64
+    azs: 1
   - name: arm-xlarge
     instanceType: t4g.xlarge
     # ref: https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html
@@ -29,6 +30,8 @@ config:
     labels:
       arch: arm64
       beta.kubernetes.io/arch: arm64
+    # run arm runners in a single AZ so that the runner would not be interrupted by AZ rebalance
+    azs: 1
   - name: x86
     instanceType: t3.medium
     amiId: ami-064d458a449aebcf9
@@ -38,3 +41,4 @@ config:
     labels:
       arch: amd64
       beta.kubernetes.io/arch: amd64
+    az3: 3

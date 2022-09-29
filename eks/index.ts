@@ -28,6 +28,7 @@ interface WorkerGroup {
     [key: string]: string;
   };
   spotPrice?: string;
+  azs: number;
 }
 
 const tags: aws.Tags = {
@@ -110,6 +111,7 @@ k8sCluster.then((v) => {
     v.createNodeGroup(`${prefix}-${worker.name}`, {
       instanceType: worker.instanceType,
       nodeAssociatePublicIpAddress: false,
+      nodeSubnetIds: vpc.privateSubnetIds.then(ids => ids.slice(0, worker.azs)),
       version: k8sVersion,
       amiId: worker.amiId,
       labels: worker.labels,

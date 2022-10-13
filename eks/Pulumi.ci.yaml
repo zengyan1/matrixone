@@ -5,6 +5,7 @@ config:
   - wanglei
   - qinshuqi
   - jinqinghui
+  - sudong
   eks:adminRoles:
   - cicd-aws-role
   eks:workers:

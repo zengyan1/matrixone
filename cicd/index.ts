@@ -276,6 +276,72 @@ const armRunnerScaling = new k8s.apiextensions.CustomResource(
   { provider: baseEKSProvider, dependsOn: [arc, sa] }
 );
 
+const x86runner = new k8s.apiextensions.CustomResource(
+    "x86-runner",
+    {
+        apiVersion: "actions.summerwind.dev/v1alpha1",
+        kind: "RunnerDeployment",
+        metadata: {
+            name: "x86-runner",
+            namespace: ns.metadata.name,
+        },
+        spec: {
+            template: {
+                spec: {
+                    organization: "matrixorigin",
+                    labels: ["x86-runner", "eks"],
+                    serviceAccountName: sa.metadata.name,
+                    nodeSelector: {
+                        "beta.kubernetes.io/arch": "amd64",
+                    },
+                    resources: {
+                        limits: {
+                            cpu: "4.0",
+                            memory: "14Gi",
+                        },
+                        requests: {
+                            cpu: "2.0",
+                            memory: "8Gi",
+                        },
+                    },
+                },
+            },
+        },
+    },
+    { provider: baseEKSProvider, dependsOn: [arc, sa] }
+);
+const x86RunnerScaling = new k8s.apiextensions.CustomResource(
+    "x86-runner",
+    {
+        apiVersion: "actions.summerwind.dev/v1alpha1",
+        kind: "HorizontalRunnerAutoscaler",
+        metadata: {
+            name: "github-runner-arm64",
+            namespace: ns.metadata.name,
+        },
+        spec: {
+            // keep at least 1 runner for avoid forever starving
+            minReplicas: 1,
+            maxReplicas: 20,
+            scaleTargetRef: {
+                name: armRunner.metadata.name,
+            },
+            scaleUpTriggers: [
+                {
+                    githubEvent: {
+                        workflowJob: {},
+                    },
+                    amount: 1,
+                    // duration is the lease time of the compute resource requested by each workflow job,
+                    // which means that the corresponding runner will run continuously for at least the lease time
+                    duration: "30m",
+                },
+            ],
+        },
+    },
+    { provider: baseEKSProvider, dependsOn: [arc, sa] }
+);
+
 // mo-cloud runners
 const moCloudRunner = new k8s.apiextensions.CustomResource(
     "mocloud-arm-runner",
@@ -297,12 +363,12 @@ const moCloudRunner = new k8s.apiextensions.CustomResource(
                     },
                     resources: {
                         limits: {
-                            cpu: "2.0",
-                            memory: "7Gi",
+                            cpu: "4.0",
+                            memory: "14Gi",
                         },
                         requests: {
                             cpu: "1.0",
-                            memory: "2Gi",
+                            memory: "8Gi",
                         },
                     },
                 },

@@ -79,6 +79,11 @@ const inlinePolicy: aws.iam.PolicyDocument = {
       Effect: "Allow",
       Resource: "*",
     },
+    {
+      Action: ["autoscaling:*"],
+      Effect: "Allow",
+      Resource: "*",
+    }
   ],
 };
 
@@ -316,7 +321,7 @@ const x86RunnerScaling = new k8s.apiextensions.CustomResource(
         apiVersion: "actions.summerwind.dev/v1alpha1",
         kind: "HorizontalRunnerAutoscaler",
         metadata: {
-            name: "github-runner-arm64",
+            name: "github-runner-x86",
             namespace: ns.metadata.name,
         },
         spec: {
@@ -324,7 +329,7 @@ const x86RunnerScaling = new k8s.apiextensions.CustomResource(
             minReplicas: 1,
             maxReplicas: 20,
             scaleTargetRef: {
-                name: armRunner.metadata.name,
+                name: x86runner.metadata.name,
             },
             scaleUpTriggers: [
                 {

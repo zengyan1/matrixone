@@ -6,6 +6,7 @@ config:
   - qinshuqi
   - jinqinghui
   - sudong
+  - zhanghailong
   eks:adminRoles:
   - cicd-aws-role
   eks:workers:

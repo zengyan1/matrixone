@@ -44,6 +44,7 @@ config:
     - shenjiangwei
     - liyuesheng
     - yanwenze
+    - pengzhen
     policy:
       Version: '2012-10-17'
       Statement:

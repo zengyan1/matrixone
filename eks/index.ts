@@ -44,7 +44,7 @@ const vpc = new awsx.ec2.Vpc(`${prefix}-vpc`, {
     {
       type: "public",
       tags: {
-        "kubernetes.io/role/internal-elb": "1",
+        "kubernetes.io/role/elb": "1",
         ...tags,
       },
     },

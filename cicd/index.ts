@@ -339,7 +339,7 @@ const x86RunnerScaling = new k8s.apiextensions.CustomResource(
                     amount: 1,
                     // duration is the lease time of the compute resource requested by each workflow job,
                     // which means that the corresponding runner will run continuously for at least the lease time
-                    duration: "30m",
+                    duration: "60m",
                 },
             ],
         },

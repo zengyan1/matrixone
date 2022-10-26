@@ -29,7 +29,7 @@ config:
     amiId: ami-0bea0f4e1d10dcca7
     spotPrice: "0.05"
     minSize: 1
-    maxSize: 10
+    maxSize: 20
     labels:
       arch: arm64
       beta.kubernetes.io/arch: arm64
@@ -44,14 +44,14 @@ config:
     labels:
       arch: amd64
       beta.kubernetes.io/arch: amd64
-    az3: 3
+    azs: 3
   - name: x86-xlarge
     instanceType: t3.xlarge
     amiId: ami-064d458a449aebcf9
     spotPrice: "0.1"
     minSize: 0
-    maxSize: 10
+    maxSize: 20
     labels:
       arch: amd64
       beta.kubernetes.io/arch: amd64
-    az3: 1
+    azs: 1

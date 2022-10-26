@@ -94,9 +94,8 @@ config:
     - arn:aws:iam::aws:policy/AmazonVPCReadOnlyAccess
     - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
     - arn:aws:iam::aws:policy/AWSCloudFormationReadOnlyAccess
-  - group: Admin
+  - group: IAMAdmin
     users:
-    - qinshuqi
     - zhanghailong
     policy:
       Version: '2012-10-17'
@@ -117,10 +116,4 @@ config:
         - 'ecr:*'
         Resource: '*'
     rolePolicies:
-    # Write permissions
-    - arn:aws:iam::aws:policy/AmazonEC2FullAccess
-    - arn:aws:iam::aws:policy/AmazonVPCFullAccess
-    - arn:aws:iam::aws:policy/AmazonSSMFullAccess
-    - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
-    - arn:aws:iam::aws:policy/AmazonS3FullAccess
     - arn:aws:iam::aws:policy/IAMFullAccess

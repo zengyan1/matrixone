@@ -83,7 +83,12 @@ const inlinePolicy: aws.iam.PolicyDocument = {
       Action: ["autoscaling:*"],
       Effect: "Allow",
       Resource: "*",
-    }
+    },
+    {
+      Action: ["cloudformation:*"],
+      Effect: "Allow",
+      Resource: "*",
+    },
   ],
 };
 
@@ -301,11 +306,11 @@ const x86runner = new k8s.apiextensions.CustomResource(
                     },
                     resources: {
                         limits: {
-                            cpu: "4.0",
+                            cpu: "8.0",
                             memory: "14Gi",
                         },
                         requests: {
-                            cpu: "2.0",
+                            cpu: "4.0",
                             memory: "8Gi",
                         },
                     },

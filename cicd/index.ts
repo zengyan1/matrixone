@@ -404,7 +404,7 @@ const moCloudRunnerScaling = new k8s.apiextensions.CustomResource(
             minReplicas: 1,
             maxReplicas: 10,
             scaleTargetRef: {
-                name: armRunner.metadata.name,
+                name: moCloudRunner.metadata.name,
             },
             scaleUpTriggers: [
                 {

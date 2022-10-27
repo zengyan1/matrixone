@@ -226,17 +226,15 @@ const armRunner = new k8s.apiextensions.CustomResource(
     spec: {
       template: {
         spec: {
-          // TODO: change to org level runner once we use a token with org-level permission
           organization: "matrixorigin",
-          // repository: "matrixorigin/ops",
           labels: ["arm64-runner", "eks"],
           serviceAccountName: sa.metadata.name,
           nodeSelector: {
             "beta.kubernetes.io/arch": "arm64",
           },
-          // TODO: customize more fields
-          // ref: https://github.com/actions-runner-controller/actions-runner-controller#additional-tweaks
-          // image:
+          image: "468413122983.dkr.ecr.us-west-2.amazonaws.com/actions-runner:dind-multiarch",
+          imagePullPolicy: "IfNotPresent",
+          dockerdWithinRunnerContainer: true,
           resources: {
             limits: {
               cpu: "4.0",
@@ -304,6 +302,9 @@ const x86runner = new k8s.apiextensions.CustomResource(
                     nodeSelector: {
                         "beta.kubernetes.io/arch": "amd64",
                     },
+                    image: "468413122983.dkr.ecr.us-west-2.amazonaws.com/actions-runner:dind-multiarch",
+                    imagePullPolicy: "IfNotPresent",
+                    dockerdWithinRunnerContainer: true,
                     resources: {
                         limits: {
                             cpu: "8.0",
@@ -371,6 +372,9 @@ const moCloudRunner = new k8s.apiextensions.CustomResource(
                     nodeSelector: {
                         "beta.kubernetes.io/arch": "arm64",
                     },
+                    image: "468413122983.dkr.ecr.us-west-2.amazonaws.com/actions-runner:dind-multiarch",
+                    imagePullPolicy: "IfNotPresent",
+                    dockerdWithinRunnerContainer: true,
                     resources: {
                         limits: {
                             cpu: "4.0",

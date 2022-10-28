@@ -94,6 +94,22 @@ config:
     - arn:aws:iam::aws:policy/AmazonVPCReadOnlyAccess
     - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
     - arn:aws:iam::aws:policy/AWSCloudFormationReadOnlyAccess
+  - group: PM
+    users:
+    - wangzinan
+    policy:
+      Version: '2012-10-17'
+      Statement:
+      - Sid: S3FullAccess
+        Effect: Allow
+        Action:
+        - 's3:*'
+        Resource: '*'
+    rolePolicies:
+    # Write permissions
+    - arn:aws:iam::aws:policy/AmazonS3FullAccess
+    # Readonly permissions
+    - arn:aws:iam::aws:policy/IAMReadOnlyAccess
   - group: IAMAdmin
     users:
     - zhanghailong

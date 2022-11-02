@@ -8,6 +8,7 @@ config:
   - sudong
   - zhanghailong
   - pengzhen
+  - tianyahui
   eks:adminRoles:
   - cicd-aws-role
   eks:workers:

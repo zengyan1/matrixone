@@ -45,6 +45,10 @@ config:
     - liyuesheng
     - yanwenze
     - pengzhen
+    - zhangxu
+    - jiangxinmeng
+    - xupeng
+    - longran
     policy:
       Version: '2012-10-17'
       Statement:

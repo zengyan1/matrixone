@@ -29,6 +29,7 @@ interface WorkerGroup {
   };
   spotPrice?: string;
   azs: number;
+  rootVolumeSize?: number;
 }
 
 const tags: aws.Tags = {
@@ -118,6 +119,7 @@ k8sCluster.then((v) => {
       spotPrice: worker.spotPrice,
       minSize: worker.minSize,
       maxSize: worker.maxSize,
+      nodeRootVolumeSize: worker.rootVolumeSize || 20,
       autoScalingGroupTags: {
         "k8s.io/cluster-autoscaler/workload": `${prefix}-${worker.name}`,
         ...tags,

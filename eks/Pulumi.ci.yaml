@@ -46,22 +46,13 @@ config:
       arch: amd64
       beta.kubernetes.io/arch: amd64
     azs: 1
-  - name: x86-xlarge
-    instanceType: t3.xlarge
-    amiId: ami-064d458a449aebcf9
-    spotPrice: "0.1"
-    minSize: 0
-    maxSize: 20
-    labels:
-      arch: amd64
-      beta.kubernetes.io/arch: amd64
-    azs: 1
   - name: x86-2xlarge
     instanceType: t3.2xlarge
     amiId: ami-064d458a449aebcf9
     spotPrice: "0.2"
     minSize: 0
     maxSize: 20
+    rootVolumeSize: 50
     labels:
       arch: amd64
       beta.kubernetes.io/arch: amd64

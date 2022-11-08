@@ -10,7 +10,7 @@ config:
   - heni
   - tianyahui  
   - pengzhen  
-   -tianfeng
+  - tianfeng
   - wangjian
   - longran
   - liyuesheng

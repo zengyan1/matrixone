@@ -27,6 +27,11 @@ config:
         Action:
         - 'ecr:*'
         Resource: '*'
+      - Sid: ECRPublicFullAccess
+        Effect: Allow
+        Action:
+        - 'ecr-public:*'
+        Resource: '*'
     rolePolicies:
     # Write permissions
     - arn:aws:iam::aws:policy/AmazonEC2FullAccess

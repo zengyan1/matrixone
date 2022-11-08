@@ -9,6 +9,7 @@ config:
   - zhanghailong
   - pengzhen
   - tianyahui
+   -tianfeng
   - wangjian
   - shenjiangwei
   - liyuesheng
@@ -17,7 +18,6 @@ config:
   - jiangxinmeng
   - xupeng
   - longran
-  - tianfeng
   eks:adminRoles:
   - cicd-aws-role
   eks:workers:

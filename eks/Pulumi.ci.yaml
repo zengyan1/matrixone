@@ -9,6 +9,15 @@ config:
   - zhanghailong
   - pengzhen
   - tianyahui
+  - wangjian
+  - shenjiangwei
+  - liyuesheng
+  - yanwenze
+  - zhangxu
+  - jiangxinmeng
+  - xupeng
+  - longran
+  - tianfeng
   eks:adminRoles:
   - cicd-aws-role
   eks:workers:

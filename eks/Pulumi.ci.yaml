@@ -5,20 +5,22 @@ config:
   - wanglei
   - qinshuqi
   - jinqinghui
-  - sudong
   - zhanghailong
-  - pengzhen
-  - tianyahui
+  - sudong
+  - heni
+  - tianyahui  
+  - pengzhen  
    -tianfeng
   - wangjian
-  - shenjiangwei
+  - longran
   - liyuesheng
   - yanwenze
+  - nitao
   - zhangxu
   - jiangxinmeng
   - xupeng
-  - longran
-  - heni
+  - shenjiangwei
+   
   eks:adminRoles:
   - cicd-aws-role
   eks:workers:

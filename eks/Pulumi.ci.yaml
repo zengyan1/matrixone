@@ -18,6 +18,7 @@ config:
   - jiangxinmeng
   - xupeng
   - longran
+  - heni
   eks:adminRoles:
   - cicd-aws-role
   eks:workers:

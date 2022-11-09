@@ -1,27 +1,30 @@
 config:
   aws:region: us-west-2
-  eks:adminUsers:
-  - wuyelei
-  - wanglei
-  - qinshuqi
-  - jinqinghui
-  - zhanghailong
-  - sudong
-  - heni
-  - tianyahui  
-  - pengzhen  
-  - tianfeng
-  - wangjian
-  - longran
-  - liyuesheng
-  - yanwenze
-  - nitao
-  - lichangliang
-  - zhangxu
-  - jiangxinmeng
-  - xupeng
-  - shenjiangwei
-   
+  eks:userMappings:
+  - group: 'system:masters'
+    users:
+    - wuyelei
+    - wanglei
+    - qinshuqi
+    - jinqinghui
+    - zhanghailong
+  - group: 'system:developer'
+    users:
+    - sudong
+    - heni
+    - tianyahui
+    - pengzhen
+    - tianfeng
+    - wangjian
+    - longran
+    - liyuesheng
+    - yanwenze
+    - nitao
+    - zhangxu
+    - jiangxinmeng
+    - xupeng
+    - shenjiangwei
+    - lichangliang
   eks:adminRoles:
   - cicd-aws-role
   eks:workers:

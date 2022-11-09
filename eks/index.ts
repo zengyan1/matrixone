@@ -4,10 +4,15 @@ import * as eks from "@pulumi/eks";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 
+interface UserMapping {
+  group: string;
+  users: string[];
+}
+
 // required configs
 const config = new pulumi.Config();
 const workers = config.requireObject<WorkerGroup[]>("workers");
-const adminUsers = config.requireObject<string[]>("adminUsers");
+const adminUsers = config.requireObject<UserMapping[]>("userMappings");
 const prefix = `${pulumi.getProject()}-${pulumi.getStack()}`;
 
 // optional knobs
@@ -254,6 +259,76 @@ k8sCluster.then((v) => {
     volumeBindingMode: "WaitForFirstConsumer",
     mountOptions: ["nodelalloc", "noatime"],
   }, {provider: v.provider});
+
+  const developerRole = new k8s.rbac.v1.ClusterRole("developer-role", {
+    metadata: {
+      name: "developer",
+    },
+    rules: [{
+      apiGroups: [""],
+      resources: [
+          "pods",
+          "services",
+          "configmaps",
+          "secrets",
+          "persistentvolumeclaims",
+          "endpoints",
+          "events",
+          "namespaces",
+          "serviceaccounts",
+          "pods/log",
+          "pods/exec",
+      ],
+      verbs: ["*"],
+    }, {
+      apiGroups: ["apps"],
+      resources: [
+          "deployments",
+          "jobs",
+          "cronjobs",
+          "daemonsets",
+      ],
+      verbs: ["*"],
+    }, {
+      apiGroups: ["apps.kruise.io"],
+      resources: [
+          "statefulsets",
+          "statefulsets/status",
+      ],
+      verbs: ["*"],
+    }, {
+      apiGroups: ["core.matrixorigin.io"],
+      resources: [
+          "matrixoneclusters",
+          "matrixoneclusters/status",
+          "logsets",
+          "logsets/status",
+          "cnsets",
+          "cnsets/status",
+          "dnsets",
+          "dnsets/status",
+          "webuis",
+          "webuis/status"
+      ],
+      verbs: ["*"],
+    }],
+  }, {provider: v.provider});
+
+  const developerRoleBinding = new k8s.rbac.v1.ClusterRoleBinding("developer-role", {
+    metadata: {
+      name: "developer",
+    },
+    roleRef: {
+      apiGroup: "rbac.authorization.k8s.io",
+      kind: "ClusterRole",
+      name: "developer",
+    },
+    subjects: [{
+      apiGroup: "rbac.authorization.k8s.io",
+      kind: "Group",
+      name: "system:developer",
+    }]
+  }, {provider: v.provider});
 });
 
 export const oidcProvider = k8sCluster.then((v) => v.core.oidcProvider!.url);
@@ -264,15 +339,17 @@ export const kubeconfig = k8sCluster.then((v) =>
 );
 
 // utilities
-function createUserMappings(users: string[]): eks.UserMapping[] {
+function createUserMappings(ms: UserMapping[]): eks.UserMapping[] {
   const mappings: eks.UserMapping[] = [];
-  for (const user of users) {
-    const mapping: eks.UserMapping = {
-      groups: ["system:masters"],
-      userArn: pulumi.interpolate`arn:aws:iam::${accountId}:user/${user}`,
-      username: user,
-    };
-    mappings.push(mapping);
+  for (const m of ms) {
+    for (const u of m.users) {
+      const mapping: eks.UserMapping = {
+        groups: [m.group],
+        userArn: pulumi.interpolate`arn:aws:iam::${accountId}:user/${u}`,
+        username: u,
+      };
+      mappings.push(mapping);
+    }
   }
   return mappings;
 }

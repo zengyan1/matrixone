@@ -278,6 +278,8 @@ k8sCluster.then((v) => {
           "serviceaccounts",
           "pods/log",
           "pods/exec",
+          "pods/portforward",
+          "pods/attach"
       ],
       verbs: ["*"],
     }, {

@@ -26,6 +26,7 @@ config:
     - shenjiangwei
     - lichangliang
     - tanboyu
+    - xiezexiong
   eks:adminRoles:
   - cicd-aws-role
   eks:workers:

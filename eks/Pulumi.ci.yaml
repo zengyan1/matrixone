@@ -29,6 +29,7 @@ config:
     - tanboyu
     - xiezexiong
     - hanfeng
+    - liubo
   eks:adminRoles:
   - cicd-aws-role
   eks:workers:

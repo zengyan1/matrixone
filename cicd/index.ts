@@ -230,7 +230,7 @@ const armRunner = new k8s.apiextensions.CustomResource(
           labels: ["arm64-runner", "eks"],
           serviceAccountName: sa.metadata.name,
           nodeSelector: {
-            "beta.kubernetes.io/arch": "arm64",
+            "arch": "arm64",
           },
           image: "468413122983.dkr.ecr.us-west-2.amazonaws.com/actions-runner:dind-multiarch",
           imagePullPolicy: "IfNotPresent",
@@ -300,7 +300,7 @@ const x86runner = new k8s.apiextensions.CustomResource(
                     labels: ["x86-runner", "eks"],
                     serviceAccountName: sa.metadata.name,
                     nodeSelector: {
-                        "beta.kubernetes.io/arch": "amd64",
+                        "arch": "amd64",
                     },
                     image: "468413122983.dkr.ecr.us-west-2.amazonaws.com/actions-runner:dind-multiarch",
                     imagePullPolicy: "IfNotPresent",
@@ -370,7 +370,7 @@ const moCloudRunner = new k8s.apiextensions.CustomResource(
                     labels: ["arm64-runner", "eks"],
                     serviceAccountName: sa.metadata.name,
                     nodeSelector: {
-                        "beta.kubernetes.io/arch": "arm64",
+                        "arch": "arm64",
                     },
                     image: "468413122983.dkr.ecr.us-west-2.amazonaws.com/actions-runner:dind-multiarch",
                     imagePullPolicy: "IfNotPresent",

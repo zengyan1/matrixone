@@ -99,3 +99,13 @@ config:
     labels:
       role: mo-arm
     azs: 1
+  - name: benchmark
+    instanceType: m5.8xlarge
+    amiId: ami-064d458a449aebcf9
+    spotPrice: "1.0"
+    minSize: 0
+    maxSize: 6
+    rootVolumeSize: 50
+    labels:
+      role: benchmark
+    azs: 1

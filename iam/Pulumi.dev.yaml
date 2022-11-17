@@ -113,6 +113,7 @@ config:
   - group: PM
     users:
     - wangzinan
+    - lisong
     policy:
       Version: '2012-10-17'
       Statement:

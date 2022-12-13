@@ -244,6 +244,7 @@ k8sCluster.then((v) => {
     addonName: "aws-ebs-csi-driver",
     clusterName: v.eksCluster.name,
     serviceAccountRoleArn: csiRole.arn,
+    addonVersion: "v1.13.0-eksbuild.3",
   });
 
   const gp3Sc = new k8s.storage.v1.StorageClass("gp3", {
@@ -279,7 +280,7 @@ k8sCluster.then((v) => {
           "pods/log",
           "pods/exec",
           "pods/portforward",
-          "pods/attach"
+          "pods/attach",
       ],
       verbs: ["*"],
     }, {
@@ -311,6 +312,12 @@ k8sCluster.then((v) => {
           "dnsets/status",
           "webuis",
           "webuis/status"
+      ],
+      verbs: ["*"],
+    }, {
+      apiGroups: ["storage.k8s.io"],
+      resources: [
+          "storageclasses"
       ],
       verbs: ["*"],
     }],

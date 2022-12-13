@@ -40,10 +40,11 @@ config:
     spotPrice: "0.03"
     # 2 for HA
     minSize: 2
-    maxSize: 15
+    maxSize: 10
     labels:
       arch: arm64
       beta.kubernetes.io/arch: arm64
+      billing-role: ci
     azs: 1
   - name: arm-xlarge
     instanceType: t4g.xlarge
@@ -51,10 +52,11 @@ config:
     amiId: ami-0bea0f4e1d10dcca7
     spotPrice: "0.05"
     minSize: 1
-    maxSize: 20
+    maxSize: 10
     labels:
       arch: arm64
       beta.kubernetes.io/arch: arm64
+      billing-role: ci
     # run arm runners in a single AZ so that the runner would not be interrupted by AZ rebalance
     azs: 1
   - name: x86
@@ -66,17 +68,19 @@ config:
     labels:
       arch: amd64
       beta.kubernetes.io/arch: amd64
+      billing-role: ci
     azs: 1
   - name: x86-2xlarge
     instanceType: t3.2xlarge
     amiId: ami-064d458a449aebcf9
     spotPrice: "0.2"
     minSize: 0
-    maxSize: 20
+    maxSize: 10
     rootVolumeSize: 50
     labels:
       arch: amd64
       beta.kubernetes.io/arch: amd64
+      billing-role: ci
     azs: 1
   - name: mo-x86
     instanceType: t3.2xlarge
@@ -87,6 +91,7 @@ config:
     rootVolumeSize: 50
     labels:
       role: mo
+      billing-role: dev-x86
     azs: 1
   - name: mo-arm
     instanceType: t4g.xlarge
@@ -98,6 +103,7 @@ config:
     rootVolumeSize: 50
     labels:
       role: mo-arm
+      billing-role: dev-arm
     azs: 1
   - name: benchmark
     instanceType: m5.8xlarge
@@ -108,4 +114,17 @@ config:
     rootVolumeSize: 50
     labels:
       role: benchmark
+      billing-role: benchmark
+    azs: 1
+    
+  - name: log-benchmark
+    instanceType: c7g.2xlarge
+    amiId: ami-064d458a449aebcf9
+    spotPrice: "0.5"
+    minSize: 0
+    maxSize: 3
+    rootVolumeSize: 50
+    labels:
+      role: log-benchmark
+      billing-role: log-benchmark
     azs: 1

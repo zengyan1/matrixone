@@ -105,6 +105,7 @@ config:
       role: mo-arm
       billing-role: dev-arm
     azs: 1
+    
   - name: benchmark
     instanceType: m5.8xlarge
     amiId: ami-064d458a449aebcf9
@@ -119,7 +120,7 @@ config:
     
   - name: log-benchmark
     instanceType: c7g.2xlarge
-    amiId: ami-064d458a449aebcf9
+    amiId: ami-0bea0f4e1d10dcca7
     spotPrice: "0.5"
     minSize: 0
     maxSize: 3

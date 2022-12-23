@@ -121,7 +121,7 @@ config:
   - name: log-benchmark
     instanceType: c7g.8xlarge
     amiId: ami-0bea0f4e1d10dcca7
-    spotPrice: "0.5"
+    spotPrice: "1.2"
     minSize: 0
     maxSize: 3
     rootVolumeSize: 50

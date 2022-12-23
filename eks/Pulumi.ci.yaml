@@ -119,7 +119,7 @@ config:
     azs: 1
     
   - name: log-benchmark
-    instanceType: c7g.2xlarge
+    instanceType: c7g.8xlarge
     amiId: ami-0bea0f4e1d10dcca7
     spotPrice: "0.5"
     minSize: 0

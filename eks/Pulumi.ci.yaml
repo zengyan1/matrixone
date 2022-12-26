@@ -119,8 +119,8 @@ config:
     azs: 1
     
   - name: log-benchmark
-    instanceType: c7g.8xlarge
-    amiId: ami-0bea0f4e1d10dcca7
+    instanceType: r5b.2xlarge
+    amiId: ami-064d458a449aebcf9
     minSize: 0
     maxSize: 3
     rootVolumeSize: 50

@@ -128,4 +128,4 @@ config:
     labels:
       role: log-benchmark
       billing-role: log-benchmark
-    azs: 1
+    azs: 3

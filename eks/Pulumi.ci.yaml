@@ -118,8 +118,8 @@ config:
       role: benchmark
       billing-role: benchmark
     azs: 1
-    
-  - name: log-benchmark
+
+  - name: log-benchmark-new
     instanceType: c7g.8xlarge
     amiId: ami-0bea0f4e1d10dcca7
     minSize: 0

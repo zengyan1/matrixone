@@ -30,6 +30,7 @@ config:
     - xiezexiong
     - hanfeng
     - liubo
+    - lisong
   eks:adminRoles:
   - cicd-aws-role
   eks:workers:

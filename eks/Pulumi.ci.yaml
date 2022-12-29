@@ -119,13 +119,25 @@ config:
       billing-role: benchmark
     azs: 1
 
-  - name: log-benchmark-new
-    instanceType: c7g.8xlarge
+  - name: log-benchmark-1
+    instanceType: c7g.2xlarge
     amiId: ami-0bea0f4e1d10dcca7
     minSize: 0
     maxSize: 3
     rootVolumeSize: 50
     labels:
-      role: log-benchmark
+      role: log-benchmark-c7g
       billing-role: log-benchmark
     azs: 3
+ 
+  - name: log-benchmark-2
+    instanceType: r5b.2xlarge
+    amiId: ami-064d458a449aebcf9
+    minSize: 0
+    maxSize: 3
+    rootVolumeSize: 50
+    labels:
+      role: log-benchmark-rb5
+      billing-role: log-benchmark
+    azs: 3
+    

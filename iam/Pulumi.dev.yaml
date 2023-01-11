@@ -9,6 +9,7 @@ config:
     - qinshuqi
     - zhanghailong
     - xiezexiong
+    - jiajiejie
     policy:
       Version: '2012-10-17'
       Statement:
@@ -62,6 +63,7 @@ config:
     - hanfeng
     - liubo
     - lisong
+    - jiajiejie
     policy:
       Version: '2012-10-17'
       Statement:

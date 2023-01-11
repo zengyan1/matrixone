@@ -8,6 +8,7 @@ config:
     - qinshuqi
     - jinqinghui
     - zhanghailong
+    - jiajiejie
   - group: 'system:developer'
     users:
     - sudong
@@ -31,7 +32,6 @@ config:
     - hanfeng
     - liubo
     - lisong
-    - jiajiejie
   eks:adminRoles:
   - cicd-aws-role
   eks:workers:

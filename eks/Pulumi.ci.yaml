@@ -32,6 +32,7 @@ config:
     - hanfeng
     - liubo
     - lisong
+    - luofei
   eks:adminRoles:
   - cicd-aws-role
   eks:workers:

@@ -73,6 +73,7 @@ config:
     - lisong
     - jiajiejie
     - linjunhong
+    - luofei
     policy:
       Version: '2012-10-17'
       Statement:

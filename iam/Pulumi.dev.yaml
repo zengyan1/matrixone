@@ -33,6 +33,14 @@ config:
         Action:
         - 'ecr-public:*'
         Resource: '*'
+      - Sid: CloudTrailReadonlyAccess
+        Effect: Allow
+        Action:
+        - 'cloudtrail:Get*'
+        - 'cloudtrail:Describe*'
+        - 'cloudtrail:List*'
+        - 'cloudtrail:LookupEvents'
+        Resource: '*'
     rolePolicies:
     # Write permissions
     - arn:aws:iam::aws:policy/AmazonEC2FullAccess

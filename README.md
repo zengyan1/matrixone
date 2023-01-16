@@ -2,6 +2,14 @@
 
 Confidently operate our production via git.
 
+## Guide
+
+- 开通权限在 EKS 上进行 MO 测试的中文文档: [在 Kubernetes 上运行 MO 集群（内部开发）](https://github.com/matrixorigin/docs/blob/main/guide/devops/Running-MO-in-Dev-k8s.md)
+
+Note:
+
+- 仓库关闭了 fork 功能，直接在仓库内创建新分支提交 PR，PR 合并后分支将自动删除。
+
 ## Process
 
 1. clone this repository;

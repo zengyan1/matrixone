@@ -141,4 +141,14 @@ config:
       role: log-benchmark-rb5
       billing-role: log-benchmark
     azs: 3
-    
+  
+  - name: benchmark-index
+    instanceType: m6a.4xlarge
+    amiId: ami-064d458a449aebcf9
+    minSize: 0
+    maxSize: 6
+    rootVolumeSize: 50
+    labels:
+      role: benchmark-index
+      billing-role: benchmark
+    azs: 3 

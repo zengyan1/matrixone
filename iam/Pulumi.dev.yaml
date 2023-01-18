@@ -10,6 +10,7 @@ config:
     - zhanghailong
     - xiezexiong
     - jiajiejie
+    - lianghongyi
     policy:
       Version: '2012-10-17'
       Statement:

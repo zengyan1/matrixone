@@ -33,6 +33,7 @@ config:
     - liubo
     - lisong
     - luofei
+    - wuqinxuan
   eks:adminRoles:
   - cicd-aws-role
   eks:workers:

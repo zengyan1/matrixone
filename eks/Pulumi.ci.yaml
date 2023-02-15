@@ -148,7 +148,7 @@ config:
     instanceType: m6a.4xlarge
     amiId: ami-064d458a449aebcf9
     minSize: 0
-    maxSize: 6
+    maxSize: 8
     rootVolumeSize: 50
     labels:
       role: benchmark-index

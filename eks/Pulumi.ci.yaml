@@ -34,6 +34,7 @@ config:
     - lisong
     - luofei
     - wuqinxuan
+    - ouyuanning
   eks:adminRoles:
   - cicd-aws-role
   eks:workers:

@@ -42,7 +42,7 @@ config:
     instanceType: t4g.large
     # ref: https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html
     amiId: ami-0bea0f4e1d10dcca7
-    spotPrice: "0.03"
+    spotPrice: "0.05"
     # 2 for HA
     minSize: 2
     maxSize: 10
@@ -55,7 +55,7 @@ config:
     instanceType: t4g.xlarge
     # ref: https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html
     amiId: ami-0bea0f4e1d10dcca7
-    spotPrice: "0.05"
+    spotPrice: "0.08"
     minSize: 1
     maxSize: 10
     labels:
@@ -67,7 +67,7 @@ config:
   - name: x86
     instanceType: t3.medium
     amiId: ami-064d458a449aebcf9
-    spotPrice: "0.03"
+    spotPrice: "0.05"
     minSize: 0
     maxSize: 5
     labels:
@@ -102,7 +102,7 @@ config:
     instanceType: t4g.xlarge
     # ref: https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html
     amiId: ami-0bea0f4e1d10dcca7
-    spotPrice: "0.05"
+    spotPrice: "0.08"
     minSize: 0
     maxSize: 20
     rootVolumeSize: 50

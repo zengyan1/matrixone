@@ -35,6 +35,7 @@ config:
     - luofei
     - wuqinxuan
     - ouyuanning
+    - zengyan
   eks:adminRoles:
   - cicd-aws-role
   eks:workers:

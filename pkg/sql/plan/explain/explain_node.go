@@ -70,6 +70,8 @@ func (ndesc *NodeDescribeImpl) GetNodeBasicInfo(ctx context.Context, options *Ex
 		pname = "Sink"
 	case plan.Node_SINK_SCAN:
 		pname = "Sink Scan"
+	case plan.Node_RECURSIVE_SCAN:
+		pname = "RECURSIVE Scan"
 	case plan.Node_AGG:
 		pname = "Aggregate"
 	case plan.Node_DISTINCT:

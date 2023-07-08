@@ -16,6 +16,7 @@ package vm
 
 import (
 	"bytes"
+	"github.com/matrixorigin/matrixone/pkg/sql/colexec/mergerecursive"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/window"
 
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/anti"
@@ -99,11 +100,12 @@ var stringFunc = [...]func(any, *bytes.Buffer){
 	LoopAnti:    loopanti.String,
 	LoopMark:    loopmark.String,
 
-	MergeTop:    mergetop.String,
-	MergeLimit:  mergelimit.String,
-	MergeOrder:  mergeorder.String,
-	MergeGroup:  mergegroup.String,
-	MergeOffset: mergeoffset.String,
+	MergeTop:       mergetop.String,
+	MergeLimit:     mergelimit.String,
+	MergeOrder:     mergeorder.String,
+	MergeGroup:     mergegroup.String,
+	MergeOffset:    mergeoffset.String,
+	MergeRecursive: mergerecursive.String,
 
 	Deletion:        deletion.String,
 	Insert:          insert.String,
@@ -155,11 +157,12 @@ var prepareFunc = [...]func(*process.Process, any) error{
 	LoopAnti:    loopanti.Prepare,
 	LoopMark:    loopmark.Prepare,
 
-	MergeTop:    mergetop.Prepare,
-	MergeLimit:  mergelimit.Prepare,
-	MergeOrder:  mergeorder.Prepare,
-	MergeGroup:  mergegroup.Prepare,
-	MergeOffset: mergeoffset.Prepare,
+	MergeTop:       mergetop.Prepare,
+	MergeLimit:     mergelimit.Prepare,
+	MergeOrder:     mergeorder.Prepare,
+	MergeGroup:     mergegroup.Prepare,
+	MergeOffset:    mergeoffset.Prepare,
+	MergeRecursive: mergerecursive.Prepare,
 
 	Deletion:        deletion.Prepare,
 	Insert:          insert.Prepare,
@@ -211,11 +214,12 @@ var execFunc = [...]func(int, *process.Process, any, bool, bool) (bool, error){
 	LoopAnti:    loopanti.Call,
 	LoopMark:    loopmark.Call,
 
-	MergeTop:    mergetop.Call,
-	MergeLimit:  mergelimit.Call,
-	MergeOrder:  mergeorder.Call,
-	MergeGroup:  mergegroup.Call,
-	MergeOffset: mergeoffset.Call,
+	MergeTop:       mergetop.Call,
+	MergeLimit:     mergelimit.Call,
+	MergeOrder:     mergeorder.Call,
+	MergeGroup:     mergegroup.Call,
+	MergeOffset:    mergeoffset.Call,
+	MergeRecursive: mergerecursive.Call,
 
 	Deletion: deletion.Call,
 	Insert:   insert.Call,

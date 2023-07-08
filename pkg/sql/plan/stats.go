@@ -605,7 +605,10 @@ func ReCalcNodeStats(nodeID int32, builder *QueryBuilder, recursive bool, leafNo
 			}
 		*/
 	case plan.Node_SINK_SCAN:
-		node.Stats = builder.qry.Nodes[node.GetSourceStep()].Stats
+		node.Stats = builder.qry.Nodes[node.GetSourceStep()[0]].Stats
+
+	case plan.Node_RECURSIVE_SCAN:
+		node.Stats = builder.qry.Nodes[node.GetSourceStep()[0]].Stats
 
 	case plan.Node_EXTERNAL_SCAN:
 		//calc for external scan is heavy, avoid recalc of this

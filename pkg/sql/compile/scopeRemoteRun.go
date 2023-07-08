@@ -17,6 +17,7 @@ package compile
 import (
 	"context"
 	"fmt"
+	"github.com/matrixorigin/matrixone/pkg/sql/colexec/mergerecursive"
 	"hash/crc32"
 	"sync/atomic"
 	"time"
@@ -163,6 +164,7 @@ func cnMessageHandle(receiver *messageReceiverOnServer) error {
 			return err
 		}
 		s = refactorScope(c, s)
+		s.SetContextRecursively(c.ctx)
 
 		err = s.ParallelRun(c, s.IsRemote)
 		if err != nil {
@@ -1290,6 +1292,8 @@ func convertToVmInstruction(opr *pipeline.Instruction, ctx *scopeContext, eng en
 		}
 	case vm.Merge:
 		v.Arg = &merge.Argument{}
+	case vm.MergeRecursive:
+		v.Arg = &mergerecursive.Argument{}
 	case vm.MergeGroup:
 		v.Arg = &mergegroup.Argument{
 			NeedEval: opr.Agg.NeedEval,

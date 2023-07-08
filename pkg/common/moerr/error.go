@@ -204,6 +204,7 @@ const (
 	ErrPartitionNoTemporary                uint16 = 20814
 	ErrBlobFieldInPartFunc                 uint16 = 20815
 	ErrUniqueKeyNeedAllFieldsInPf          uint16 = 20816
+	ErrCheckRecursiveLevel                 uint16 = 20817 // don't use this error code, just check recursive level
 
 	// ErrEnd, the max value of MOErrorCode
 	ErrEnd uint16 = 65535
@@ -363,6 +364,7 @@ var errorMsgRefer = map[uint16]moErrorMsgItem{
 	ErrPartitionNoTemporary:                {ER_PARTITION_NO_TEMPORARY, []string{MySQLDefaultSqlState}, "Cannot create temporary table with partitions"},
 	ErrBlobFieldInPartFunc:                 {ER_BLOB_FIELD_IN_PART_FUNC_ERROR, []string{MySQLDefaultSqlState}, "A BLOB field is not allowed in partition function"},
 	ErrUniqueKeyNeedAllFieldsInPf:          {ER_UNIQUE_KEY_NEED_ALL_FIELDS_IN_PF, []string{MySQLDefaultSqlState}, "A %-.192s must include all columns in the table's partitioning function"},
+	ErrCheckRecursiveLevel:                 {ErrCheckRecursiveLevel, []string{MySQLDefaultSqlState}, "recursive level out of range"},
 
 	// Group End: max value of MOErrorCode
 	ErrEnd: {ER_UNKNOWN_ERROR, []string{MySQLDefaultSqlState}, "internal error: end of errcode code"},
@@ -1042,6 +1044,10 @@ func NewBlobFieldInPartFunc(ctx context.Context) *Error {
 
 func NewUniqueKeyNeedAllFieldsInPf(ctx context.Context, k any) *Error {
 	return newError(ctx, ErrUniqueKeyNeedAllFieldsInPf, k)
+}
+
+func NewCheckRecursiveLevel(ctx context.Context) *Error {
+	return newError(ctx, ErrCheckRecursiveLevel)
 }
 
 var contextFunc atomic.Value

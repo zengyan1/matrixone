@@ -53,6 +53,7 @@ const (
 	MergeOrder
 	MergeGroup
 	MergeOffset
+	MergeRecursive
 
 	Deletion
 	Insert
@@ -120,6 +121,8 @@ func (ins *Instruction) IsBrokenNode() bool {
 	case Top, MergeTop:
 		return true
 	case Window:
+		return true
+	case MergeRecursive:
 		return true
 	}
 	return false

@@ -349,6 +349,7 @@ func init() {
 		"revoke":                   REVOKE,
 		"reverse":                  REVERSE,
 		"reload":                   RELOAD,
+		"recursive":                RECURSIVE,
 		"right":                    RIGHT,
 		"rlike":                    REGEXP,
 		"rollback":                 ROLLBACK,

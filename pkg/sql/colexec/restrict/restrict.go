@@ -68,7 +68,7 @@ func Call(idx int, proc *process.Process, arg any, isFirst bool, isLast bool) (b
 		if err != nil {
 			bat.Clean(proc.Mp())
 			proc.SetInputBatch(nil)
-			return false, err
+			return true, err
 		}
 
 		if proc.OperatorOutofMemory(int64(vec.Size())) {

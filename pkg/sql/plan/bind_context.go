@@ -44,7 +44,9 @@ func NewBindContext(builder *QueryBuilder, parent *BindContext) *BindContext {
 }
 
 func (bc *BindContext) rootTag() int32 {
-	if bc.resultTag > 0 {
+	if bc.initSelect || bc.recSelect || bc.finalSelect {
+		return bc.sinkTag
+	} else if bc.resultTag > 0 {
 		return bc.resultTag
 	} else {
 		return bc.projectTag

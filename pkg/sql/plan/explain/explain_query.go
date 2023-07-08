@@ -114,7 +114,18 @@ func explainStep(ctx context.Context, step *plan.Node, settings *FormatSettings,
 		settings.buffer.PushNewLine(basicNodeInfo, true, settings.level)
 
 		if nodedescImpl.Node.NodeType == plan.Node_SINK_SCAN {
-			msg := "DataSource: " + fmt.Sprintf("Plan %v", nodedescImpl.Node.SourceStep)
+			msg := "DataSource: " + fmt.Sprintf("Plan %v", nodedescImpl.Node.SourceStep[0])
+			settings.buffer.PushNewLine(msg, false, settings.level)
+		}
+
+		if nodedescImpl.Node.NodeType == plan.Node_RECURSIVE_SCAN {
+			msg := "DataSource: "
+			for i, s := range nodedescImpl.Node.SourceStep {
+				if i > 0 {
+					msg += ", "
+				}
+				msg += fmt.Sprintf("Plan %v", s)
+			}
 			settings.buffer.PushNewLine(msg, false, settings.level)
 		}
 

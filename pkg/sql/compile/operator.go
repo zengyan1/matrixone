@@ -17,6 +17,7 @@ package compile
 import (
 	"context"
 	"fmt"
+	"github.com/matrixorigin/matrixone/pkg/sql/colexec/mergerecursive"
 
 	"github.com/google/uuid"
 	"github.com/matrixorigin/matrixone/pkg/catalog"
@@ -283,6 +284,8 @@ func dupInstruction(sourceIns *vm.Instruction, regMap map[*process.WaitRegister]
 		}
 	case vm.Merge:
 		res.Arg = &merge.Argument{}
+	case vm.MergeRecursive:
+		res.Arg = &mergerecursive.Argument{}
 	case vm.MergeGroup:
 		t := sourceIns.Arg.(*mergegroup.Argument)
 		res.Arg = &mergegroup.Argument{

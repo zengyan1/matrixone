@@ -54,6 +54,22 @@ func (r *ReceiverOperator) ReceiveFromSingleReg(regIdx int, analyze process.Anal
 	}
 }
 
+func (r *ReceiverOperator) ReceiveFromSingleRegNonBlock(regIdx int, analyze process.Analyze) (*batch.Batch, bool, error) {
+	start := time.Now()
+	defer analyze.WaitStop(start)
+	select {
+	case <-r.proc.Ctx.Done():
+		return nil, true, nil
+	case bat, ok := <-r.proc.Reg.MergeReceivers[regIdx].Ch:
+		if !ok || bat == nil {
+			return nil, true, nil
+		}
+		return bat, false, nil
+	default:
+		return nil, false, nil
+	}
+}
+
 func (r *ReceiverOperator) FreeAllReg() {
 	for i := range r.proc.Reg.MergeReceivers {
 		r.FreeSingleReg(i)

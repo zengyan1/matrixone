@@ -101,11 +101,22 @@ func Call(idx int, proc *process.Process, arg any, isFirst bool, isLast bool) (b
 		}
 		return true, nil
 	}
-
-	if bat.Length() == 0 {
+	if bat.Special() {
+		if !ap.ctr.hasData {
+			bat.SpecialCTE = 2
+		} else {
+			ap.ctr.hasData = false
+		}
+	} else if bat.Length() == 0 {
 		bat.Clean(proc.Mp())
 		return false, nil
+	} else {
+		ap.ctr.hasData = true
 	}
+	if bat.SpecialCTE == 2 {
+		logutil.Error("-------------------------sjkdlaasfahjksfalskdjsalfdkjaslkdfjlskdjfjkklkkkkkkkk")
+	}
+
 	return ap.ctr.sendFunc(bat, ap, proc)
 }
 

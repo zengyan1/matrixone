@@ -371,7 +371,7 @@ func (c *Compile) Run(_ uint64) error {
 // run once
 func (c *Compile) runOnce() error {
 	var wg sync.WaitGroup
-
+	logutil.Error(DebugShowScopes(c.scope))
 	errC := make(chan error, len(c.scope))
 	for _, s := range c.scope {
 		s.SetContextRecursively(c.proc.Ctx)

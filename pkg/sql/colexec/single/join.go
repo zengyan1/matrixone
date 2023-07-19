@@ -79,6 +79,10 @@ func Call(idx int, proc *process.Process, arg any, isFirst bool, isLast bool) (b
 				ctr.state = End
 				continue
 			}
+			if bat.Special() {
+				proc.SetInputBatch(bat)
+				return false, nil
+			}
 			if bat.Length() == 0 {
 				bat.Clean(proc.Mp())
 				continue

@@ -150,6 +150,11 @@ func sendToAllLocalFunc(bat *batch.Batch, ap *Argument, proc *process.Process) (
 			logutil.Warnf("the receiver's ctx done during dispatch to all local")
 			return true, nil
 		case reg.Ch <- bat:
+			if bat.SpecialCTE == 2 {
+				logutil.Errorf("----------------******---------sjkdlaasfahjksfalskdjsalfdkjaslkdfjlskdjfjkklkkkkkkkk, %p", reg.Ch)
+			}
+			//bat.SpecialCTE = 0
+			//bat.Clean(proc.Mp())
 		}
 	}
 

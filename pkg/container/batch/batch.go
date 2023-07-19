@@ -252,6 +252,10 @@ func (bat *Batch) Clean(m *mpool.MPool) {
 	bat.Vecs = nil
 }
 
+func (bat *Batch) Special() bool {
+	return bat.SpecialCTE > 0
+}
+
 func (bat *Batch) CleanOnlyData() {
 	for _, vec := range bat.Vecs {
 		if vec != nil {

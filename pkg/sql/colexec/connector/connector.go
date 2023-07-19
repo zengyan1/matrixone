@@ -36,7 +36,7 @@ func Call(_ int, proc *process.Process, arg any, _ bool, _ bool) (bool, error) {
 	if bat == nil {
 		return true, nil
 	}
-	if bat.Length() == 0 {
+	if !bat.Special() && bat.Length() == 0 {
 		bat.Clean(proc.Mp())
 		return false, nil
 	}

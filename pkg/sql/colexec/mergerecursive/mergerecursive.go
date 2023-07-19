@@ -16,6 +16,9 @@ package mergerecursive
 
 import (
 	"bytes"
+	"github.com/matrixorigin/matrixone/pkg/container/batch"
+	"github.com/matrixorigin/matrixone/pkg/container/types"
+	"github.com/matrixorigin/matrixone/pkg/container/vector"
 	"github.com/matrixorigin/matrixone/pkg/vm/process"
 )
 
@@ -36,15 +39,70 @@ func Call(idx int, proc *process.Process, arg any, isFirst bool, isLast bool) (b
 	defer anal.Stop()
 	ap := arg.(*Argument)
 	ctr := ap.ctr
+	var sb *batch.Batch
 
-	bat, end, _ := ctr.ReceiveFromAllRegs(anal)
+	if ctr.status == 0 {
+		bat, end, err := ctr.ReceiveFromSingleReg(0, anal)
+		if err != nil {
+			return false, err
+		}
+		if end || bat == nil {
+			ctr.status = 1
+		} else {
+			sb = bat
+		}
+	}
+
+	if ctr.status == 1 {
+		ctr.status = 2
+		sb = specialBatch(proc)
+	}
+
+	bat, end, err := ctr.ReceiveFromSingleRegNonBlock(1, anal)
+	if err != nil {
+		return false, err
+	}
 	if end {
 		proc.SetInputBatch(nil)
 		return true, nil
 	}
+	if bat != nil {
+		ctr.bats = append(ctr.bats, bat)
+	}
 
-	anal.Input(bat, isFirst)
-	anal.Output(bat, isLast)
-	proc.SetInputBatch(bat)
+	if sb == nil && len(ctr.bats) > 0 {
+		sb = ctr.bats[0]
+		ctr.bats = ctr.bats[1:]
+	} else if sb == nil {
+		sb, _, err = ctr.ReceiveFromSingleReg(1, anal)
+		if err != nil {
+			return false, err
+		}
+		if sb == nil {
+			proc.SetInputBatch(nil)
+			return true, nil
+		}
+	}
+
+	if sb.SpecialCTE == 2 {
+		proc.SetInputBatch(nil)
+		return true, nil
+	}
+
+	anal.Input(sb, isFirst)
+	anal.Output(sb, isLast)
+	proc.SetInputBatch(sb)
 	return false, nil
+}
+
+func specialBatch(proc *process.Process) *batch.Batch {
+	resBat := batch.NewWithSize(1)
+	resBat.Attrs = []string{
+		"some_column",
+	}
+	resBat.SetVector(0, vector.NewVec(types.T_text.ToType()))
+	vector.AppendBytes(resBat.GetVector(0), []byte("hello world"), false, proc.GetMPool())
+	resBat.SetZs(1, proc.GetMPool())
+	resBat.SpecialCTE = 1
+	return resBat
 }

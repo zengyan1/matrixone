@@ -139,6 +139,10 @@ func (c *container) probeHashTable(proc *process.Process, analyze process.Analyz
 		if err != nil {
 			return false, err
 		}
+		if btc.Special() {
+			proc.SetInputBatch(btc)
+			return false, nil
+		}
 
 		// last batch of block
 		if btc == nil {

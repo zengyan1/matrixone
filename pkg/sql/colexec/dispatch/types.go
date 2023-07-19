@@ -78,6 +78,7 @@ type container struct {
 	remoteToIdx  map[uuid.UUID]int
 	shuffledBats []*batch.Batch
 	batsCount    int
+	hasData      bool
 }
 
 type Argument struct {

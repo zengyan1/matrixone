@@ -173,6 +173,7 @@ type aggInfo struct {
 //	(Attrs) - list of attributes
 //	(vecs) 	- columns
 type Batch struct {
+	SpecialCTE int32
 	// Ro if true, Attrs is read only
 	Ro bool
 	// reference count, default is 1

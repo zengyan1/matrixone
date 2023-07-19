@@ -156,6 +156,10 @@ func (ctr *container) probe(proc *process.Process, analyzer process.Analyze, isF
 		if bat == nil {
 			return true, nil
 		}
+		if bat.Special() {
+			proc.SetInputBatch(bat)
+			return false, nil
+		}
 		if len(bat.Zs) == 0 {
 			bat.Clean(proc.Mp())
 			continue

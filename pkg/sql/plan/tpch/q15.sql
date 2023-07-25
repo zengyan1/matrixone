@@ -13,7 +13,7 @@ create view q15_revenue0 (supplier_no, total_revenue) as
 
 Rewrite Q15 using with.
 */
-
+explain verbose 
 with q15_revenue0 as (
 	select
 		l_suppkey as supplier_no,

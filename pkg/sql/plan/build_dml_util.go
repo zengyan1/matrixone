@@ -1570,7 +1570,7 @@ func appendSinkScanNodeWithTag(builder *QueryBuilder, bindCtx *BindContext, sour
 		NodeType:    plan.Node_SINK_SCAN,
 		SourceStep:  []int32{sourceStep},
 		ProjectList: sinkScanProject,
-		BindingTags: []int32{tag},
+		BindingTags: []int32{builder.genNewTag()},
 	}
 	lastNodeId = builder.appendNode(sinkScanNode, bindCtx)
 	return lastNodeId

@@ -562,6 +562,8 @@ func (ndesc *NodeDescribeImpl) GetRuntimeFilteProbeInfo(ctx context.Context, opt
 			if v.MatchPrefix {
 				buf.WriteString(" Match Prefix")
 			}
+			buf.WriteString(" Tag: ")
+			buf.WriteString(strconv.Itoa(int(v.Tag)))
 		}
 	} else if options.Format == EXPLAIN_FORMAT_JSON {
 		return "", moerr.NewNYI(ctx, "explain format json")
@@ -585,6 +587,8 @@ func (ndesc *NodeDescribeImpl) GetRuntimeFilterBuildInfo(ctx context.Context, op
 			if err != nil {
 				return "", err
 			}
+			buf.WriteString(" Tag: ")
+			buf.WriteString(strconv.Itoa(int(v.Tag)))
 		}
 	} else if options.Format == EXPLAIN_FORMAT_JSON {
 		return "", moerr.NewNYI(ctx, "explain format json")

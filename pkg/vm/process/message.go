@@ -15,6 +15,7 @@
 package process
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -88,6 +89,7 @@ type MessageReceiver struct {
 }
 
 func (proc *Process) SendMessage(m Message) {
+	fmt.Println("SendMessage", m.GetMsgTag(), proc.Id)
 	mb := proc.MessageBoard
 	if m.GetReceiverAddr().CnAddr == CURRENTCN { // message for current CN
 		if m.NeedBlock() {
@@ -122,6 +124,7 @@ func (mr *MessageReceiver) receiveMessageNonBlock() []Message {
 	defer mr.mb.RwMutex.RUnlock()
 	var result []Message
 	lenMessages := int32(len(mr.mb.Messages))
+	fmt.Println("lenMessages", lenMessages)
 	for ; mr.offset < lenMessages; mr.offset++ {
 		if mr.mb.Messages[mr.offset] == nil {
 			continue
@@ -130,6 +133,7 @@ func (mr *MessageReceiver) receiveMessageNonBlock() []Message {
 		if !MatchAddress(message, mr.addr) {
 			continue
 		}
+		fmt.Println("mr.tags", len(mr.tags), mr.tags)
 		for i := range mr.tags {
 			if mr.tags[i] == message.GetMsgTag() {
 				result = append(result, message)

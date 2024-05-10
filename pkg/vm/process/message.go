@@ -85,7 +85,7 @@ type MessageReceiver struct {
 	tags     []int32
 	received []int32
 	addr     *MessageAddress
-	mb       *MessageBoard
+	Mb       *MessageBoard
 }
 
 func (proc *Process) SendMessage(m Message) {
@@ -115,22 +115,22 @@ func (proc *Process) NewMessageReceiver(tags []int32, addr MessageAddress) *Mess
 	return &MessageReceiver{
 		tags: tags,
 		addr: &addr,
-		mb:   proc.MessageBoard,
+		Mb:   proc.MessageBoard,
 	}
 }
 
 func (mr *MessageReceiver) receiveMessageNonBlock() []Message {
-	mr.mb.RwMutex.RLock()
-	defer mr.mb.RwMutex.RUnlock()
+	mr.Mb.RwMutex.RLock()
+	defer mr.Mb.RwMutex.RUnlock()
 	var result []Message
-	lenMessages := int32(len(mr.mb.Messages))
+	lenMessages := int32(len(mr.Mb.Messages))
 	fmt.Println("lenMessages", lenMessages, mr.tags, mr.offset)
 	for ; mr.offset < lenMessages; mr.offset++ {
-		if mr.mb.Messages[mr.offset] == nil {
+		if mr.Mb.Messages[mr.offset] == nil {
 			fmt.Println("mr.mb.Messages[mr.offset] == nil continue", mr.tags)
 			continue
 		}
-		message := *mr.mb.Messages[mr.offset]
+		message := *mr.Mb.Messages[mr.offset]
 		if !MatchAddress(message, mr.addr) {
 			fmt.Println("!MatchAddress(message, mr.addr) continue", mr.tags)
 			continue
@@ -151,10 +151,10 @@ func (mr *MessageReceiver) Free() {
 	if len(mr.received) == 0 {
 		return
 	}
-	mr.mb.RwMutex.Lock()
-	defer mr.mb.RwMutex.Unlock()
+	mr.Mb.RwMutex.Lock()
+	defer mr.Mb.RwMutex.Unlock()
 	for i := range mr.received {
-		mr.mb.Messages[mr.received[i]] = nil
+		mr.Mb.Messages[mr.received[i]] = nil
 	}
 	mr.received = nil
 }
@@ -165,14 +165,14 @@ func (mr *MessageReceiver) ReceiveMessage(needBlock bool) []Message {
 		return result
 	}
 	for len(result) == 0 {
-		mr.mb.Cond.L.Lock()
+		mr.Mb.Cond.L.Lock()
 		result = mr.receiveMessageNonBlock()
 		if len(result) > 0 {
-			mr.mb.Cond.L.Unlock()
+			mr.Mb.Cond.L.Unlock()
 			return result
 		}
-		mr.mb.Cond.Wait()
-		mr.mb.Cond.L.Unlock()
+		mr.Mb.Cond.Wait()
+		mr.Mb.Cond.L.Unlock()
 		result = mr.receiveMessageNonBlock()
 	}
 	return result

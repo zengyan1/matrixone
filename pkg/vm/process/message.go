@@ -124,13 +124,15 @@ func (mr *MessageReceiver) receiveMessageNonBlock() []Message {
 	defer mr.mb.RwMutex.RUnlock()
 	var result []Message
 	lenMessages := int32(len(mr.mb.Messages))
-	fmt.Println("lenMessages", lenMessages)
+	fmt.Println("lenMessages", lenMessages, mr.tags, mr.offset)
 	for ; mr.offset < lenMessages; mr.offset++ {
 		if mr.mb.Messages[mr.offset] == nil {
+			fmt.Println("mr.mb.Messages[mr.offset] == nil continue", mr.tags)
 			continue
 		}
 		message := *mr.mb.Messages[mr.offset]
 		if !MatchAddress(message, mr.addr) {
+			fmt.Println("!MatchAddress(message, mr.addr) continue", mr.tags)
 			continue
 		}
 		fmt.Println("mr.tags", len(mr.tags), mr.tags)

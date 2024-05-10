@@ -211,6 +211,8 @@ func cnMessageHandle(receiver *messageReceiverOnServer) error {
 		s = appendWriteBackOperator(c, s)
 		s.SetContextRecursively(c.ctx)
 
+		fmt.Println("Decode Scope", s.Proc.Id)
+		fmt.Println(DebugShowScopes([]*Scope{s}))
 		err = s.ParallelRun(c, s.IsRemote)
 		if err == nil {
 			// record the number of s3 requests

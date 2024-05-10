@@ -16,6 +16,7 @@ package compile
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec/connector"
@@ -183,6 +184,9 @@ func debugShowScopes(ss []*Scope, gap int, rmp map[*process.WaitRegister]int) st
 			return "nil"
 		}
 		s := fmt.Sprintf("%s.%s%s", source.SchemaName, source.RelationName, source.Attributes)
+		if len(source.RuntimeFilterSpecs) > 0 {
+			s = s + " Tag:" + strconv.Itoa(int(source.RuntimeFilterSpecs[0].Tag))
+		}
 		return strings.TrimLeft(s, ".")
 	}
 

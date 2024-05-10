@@ -86,6 +86,7 @@ type processHelper struct {
 	txnClient        client.TxnClient
 	sessionInfo      process.SessionInfo
 	analysisNodeList []int32
+	MessageBoard     *process.MessageBoard
 }
 
 // messageSenderOnClient is a structure
@@ -267,7 +268,7 @@ type messageReceiverOnServer struct {
 
 	cnInformation cnInformation
 	// information to build a process.
-	procBuildHelper processHelper
+	procBuildHelper *processHelper
 
 	clientSession   morpc.ClientSession
 	messageAcquirer func() morpc.Message
@@ -384,6 +385,10 @@ func (receiver *messageReceiverOnServer) newCompile() *Compile {
 
 	c := reuse.Alloc[Compile](nil)
 	c.proc = proc
+	if pHelper.MessageBoard == nil {
+		pHelper.MessageBoard = c.MessageBoard
+	}
+	c.MessageBoard = pHelper.MessageBoard
 	c.proc.MessageBoard = c.MessageBoard
 	c.e = cnInfo.storeEngine
 	c.anal = newAnaylze()
@@ -492,17 +497,17 @@ func (receiver *messageReceiverOnServer) sendEndMessage() error {
 	return receiver.clientSession.Write(receiver.ctx, message)
 }
 
-func generateProcessHelper(data []byte, cli client.TxnClient) (processHelper, error) {
+func generateProcessHelper(data []byte, cli client.TxnClient) (*processHelper, error) {
 	procInfo := &pipeline.ProcessInfo{}
 	err := procInfo.Unmarshal(data)
 	if err != nil {
-		return processHelper{}, err
+		return &processHelper{}, err
 	}
 	if len(procInfo.GetAnalysisNodeList()) == 0 {
 		panic(fmt.Sprintf("empty plan: %s", procInfo.Sql))
 	}
 
-	result := processHelper{
+	result := &processHelper{
 		id:               procInfo.Id,
 		lim:              convertToProcessLimitation(procInfo.Lim),
 		unixTime:         procInfo.UnixTime,
@@ -512,11 +517,11 @@ func generateProcessHelper(data []byte, cli client.TxnClient) (processHelper, er
 	}
 	result.txnOperator, err = cli.NewWithSnapshot([]byte(procInfo.Snapshot))
 	if err != nil {
-		return processHelper{}, err
+		return &processHelper{}, err
 	}
 	result.sessionInfo, err = convertToProcessSessionInfo(procInfo.SessionInfo)
 	if err != nil {
-		return processHelper{}, err
+		return &processHelper{}, err
 	}
 
 	return result, nil

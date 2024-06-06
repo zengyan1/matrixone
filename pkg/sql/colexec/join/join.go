@@ -71,6 +71,7 @@ func (arg *Argument) Call(proc *process.Process) (vm.CallResult, error) {
 			if err := ctr.build(anal); err != nil {
 				return result, err
 			}
+			fmt.Println("innerjoin buildend", proc.Id)
 			if ctr.mp == nil && !arg.IsShuffle {
 				// for inner ,right and semi join, if hashmap is empty, we can finish this pipeline
 				// shuffle join can't stop early for this moment
@@ -79,7 +80,7 @@ func (arg *Argument) Call(proc *process.Process) (vm.CallResult, error) {
 				ctr.state = Probe
 			}
 		case Probe:
-			fmt.Println("innerjoin probe", proc.Id)
+			fmt.Println("innerjoin build", proc.Id, arg.Cond.String())
 			if arg.bat == nil {
 				msg := ctr.ReceiveFromSingleReg(0, anal)
 				if msg.Err != nil {

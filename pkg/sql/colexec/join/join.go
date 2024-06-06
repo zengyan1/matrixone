@@ -67,6 +67,7 @@ func (arg *Argument) Call(proc *process.Process) (vm.CallResult, error) {
 	for {
 		switch ctr.state {
 		case Build:
+			fmt.Println("innerjoin build", proc.Id)
 			if err := ctr.build(anal); err != nil {
 				return result, err
 			}
@@ -78,6 +79,7 @@ func (arg *Argument) Call(proc *process.Process) (vm.CallResult, error) {
 				ctr.state = Probe
 			}
 		case Probe:
+			fmt.Println("innerjoin probe", proc.Id)
 			if arg.bat == nil {
 				msg := ctr.ReceiveFromSingleReg(0, anal)
 				if msg.Err != nil {

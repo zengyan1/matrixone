@@ -70,7 +70,6 @@ func (arg *Argument) Call(proc *process.Process) (vm.CallResult, error) {
 	for {
 		switch ctr.state {
 		case Build:
-			fmt.Println("rightjoin build", proc.Id)
 			if err := ctr.build(analyze); err != nil {
 				return result, err
 			}
@@ -83,7 +82,6 @@ func (arg *Argument) Call(proc *process.Process) (vm.CallResult, error) {
 			}
 
 		case Probe:
-			fmt.Println("rightjoin probe", proc.Id)
 			if arg.bat == nil {
 				msg := ctr.ReceiveFromSingleReg(0, analyze)
 				if msg.Err != nil {

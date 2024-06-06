@@ -349,6 +349,8 @@ func (c *Compile) getAffectedRows() uint64 {
 }
 
 func (c *Compile) run(s *Scope) error {
+	fmt.Println("DebugShowScope", c.proc.Id)
+	fmt.Println(DebugShowScopes([]*Scope{s}))
 	if s == nil {
 		return nil
 	}

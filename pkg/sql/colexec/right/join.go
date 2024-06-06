@@ -16,6 +16,7 @@ package right
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/matrixorigin/matrixone/pkg/common/bitmap"
 	"github.com/matrixorigin/matrixone/pkg/common/moerr"
@@ -36,6 +37,7 @@ func (arg *Argument) String(buf *bytes.Buffer) {
 }
 
 func (arg *Argument) Prepare(proc *process.Process) (err error) {
+	fmt.Println("rightjoin prepare", proc.Id)
 	arg.ctr = new(container)
 	arg.ctr.InitReceiver(proc, false)
 	arg.ctr.inBuckets = make([]uint8, hashmap.UnitLimit)
@@ -68,6 +70,7 @@ func (arg *Argument) Call(proc *process.Process) (vm.CallResult, error) {
 	for {
 		switch ctr.state {
 		case Build:
+			fmt.Println("rightjoin build", proc.Id)
 			if err := ctr.build(analyze); err != nil {
 				return result, err
 			}
@@ -80,6 +83,7 @@ func (arg *Argument) Call(proc *process.Process) (vm.CallResult, error) {
 			}
 
 		case Probe:
+			fmt.Println("rightjoin probe", proc.Id)
 			if arg.bat == nil {
 				msg := ctr.ReceiveFromSingleReg(0, analyze)
 				if msg.Err != nil {

@@ -15,6 +15,8 @@
 package right
 
 import (
+	"fmt"
+
 	"github.com/matrixorigin/matrixone/pkg/common/bitmap"
 	"github.com/matrixorigin/matrixone/pkg/common/hashmap"
 	"github.com/matrixorigin/matrixone/pkg/common/reuse"
@@ -130,6 +132,7 @@ func (arg *Argument) Reset(proc *process.Process, pipelineFailed bool, err error
 }
 
 func (arg *Argument) Free(proc *process.Process, pipelineFailed bool, err error) {
+	fmt.Println("Rightjoin Free", proc.Id)
 	ctr := arg.ctr
 	if ctr != nil {
 		if !ctr.handledLast {

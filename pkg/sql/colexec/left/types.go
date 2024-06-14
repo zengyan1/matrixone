@@ -15,6 +15,8 @@
 package left
 
 import (
+	"fmt"
+
 	"github.com/matrixorigin/matrixone/pkg/common/hashmap"
 	"github.com/matrixorigin/matrixone/pkg/common/reuse"
 	"github.com/matrixorigin/matrixone/pkg/container/batch"
@@ -118,6 +120,7 @@ func (arg *Argument) Reset(proc *process.Process, pipelineFailed bool, err error
 }
 
 func (arg *Argument) Free(proc *process.Process, pipelineFailed bool, err error) {
+	fmt.Println("Leftjoin Prepare", proc.Id)
 	ctr := arg.ctr
 	if ctr != nil {
 		ctr.cleanBatch(proc)

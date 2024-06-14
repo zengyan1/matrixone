@@ -16,6 +16,7 @@ package left
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/matrixorigin/matrixone/pkg/common/hashmap"
 	"github.com/matrixorigin/matrixone/pkg/common/moerr"
@@ -34,6 +35,7 @@ func (arg *Argument) String(buf *bytes.Buffer) {
 }
 
 func (arg *Argument) Prepare(proc *process.Process) (err error) {
+	fmt.Println("Leftjoin Prepare", proc.Id)
 	arg.ctr = new(container)
 	arg.ctr.InitReceiver(proc, false)
 	arg.ctr.inBuckets = make([]uint8, hashmap.UnitLimit)

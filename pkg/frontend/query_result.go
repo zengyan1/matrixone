@@ -51,6 +51,7 @@ func canSaveQueryResult(ctx context.Context, ses *Session) bool {
 	if ses.ast == nil {
 		return false
 	}
+
 	stmtProfile := ses.GetStmtProfile()
 	if stmtProfile.GetSqlSourceType() == constant.InternalSql {
 		return false
@@ -58,7 +59,8 @@ func canSaveQueryResult(ctx context.Context, ses *Session) bool {
 	if stmtProfile.GetStmtType() == "Select" && stmtProfile.GetSqlSourceType() != constant.CloudUserSql {
 		return false
 	}
-	val, err := ses.GetGlobalVar(ctx, "save_query_result")
+
+	val, err := ses.GetSessionSysVar("save_query_result")
 	if err != nil {
 		return false
 	}
@@ -74,7 +76,7 @@ func canSaveQueryResult(ctx context.Context, ses *Session) bool {
 }
 
 func initQueryResulConfig(ctx context.Context, ses *Session) error {
-	val, err := ses.GetGlobalVar(ctx, "query_result_maxsize")
+	val, err := ses.GetSessionSysVar("query_result_maxsize")
 	if err != nil {
 		return err
 	}
@@ -84,8 +86,9 @@ func initQueryResulConfig(ctx context.Context, ses *Session) error {
 	case float64:
 		ses.limitResultSize = v
 	}
+
 	var p uint64
-	val, err = ses.GetGlobalVar(ctx, "query_result_timeout")
+	val, err = ses.GetSessionSysVar("query_result_timeout")
 	if err != nil {
 		return err
 	}
@@ -95,12 +98,19 @@ func initQueryResulConfig(ctx context.Context, ses *Session) error {
 	case float64:
 		p = uint64(v)
 	}
+
 	ses.createdTime = time.Now()
 	ses.expiredTime = ses.createdTime.Add(time.Hour * time.Duration(p))
 	return err
 }
 
 func saveBatch(ctx context.Context, ses *Session, bat *batch.Batch) error {
+	n := uint64(0)
+	if bat != nil && bat.Vecs[0] != nil {
+		n = uint64(bat.Vecs[0].Length())
+	}
+	ses.queryRowCount += n
+
 	s := ses.curResultSize + float64(bat.Size())/(1024*1024)
 	if s > ses.limitResultSize {
 		ses.Info(ctx, "open save query result", zap.Float64("current result size:", s))
@@ -127,6 +137,7 @@ func saveBatch(ctx context.Context, ses *Session, bat *batch.Batch) error {
 		return err
 	}
 	ses.curResultSize = s
+	ses.savedRowCount += n
 	return err
 }
 
@@ -150,6 +161,8 @@ func saveMeta(ctx context.Context, ses *Session) error {
 		// Be careful, if you want to do async op.
 		// ses.tStmt = nil /* #16028: QueryResult independent of ses.tStmt */
 		ses.curResultSize = 0
+		ses.savedRowCount = 0
+		ses.queryRowCount = 0
 	}()
 	fs := getGlobalPu().FileService
 	// write query result meta
@@ -183,20 +196,22 @@ func saveMeta(ctx context.Context, ses *Session) error {
 		return err
 	}
 	m := &catalog.Meta{
-		QueryId:     ses.GetStmtId(),
-		Statement:   ses.GetSql(),
-		AccountId:   ses.GetTenantInfo().GetTenantID(),
-		RoleId:      ses.proc.SessionInfo.RoleId,
-		ResultPath:  buf.String(),
-		CreateTime:  types.UnixToTimestamp(ses.createdTime.Unix()),
-		ResultSize:  ses.curResultSize,
-		Columns:     string(b),
-		Tables:      getTablesFromPlan(ses.p),
-		UserId:      ses.GetTenantInfo().GetUserID(),
-		ExpiredTime: types.UnixToTimestamp(ses.expiredTime.Unix()),
-		Plan:        string(sp),
-		Ast:         string(st),
-		ColumnMap:   colMap,
+		QueryId:       ses.GetStmtId(),
+		Statement:     ses.GetSql(),
+		AccountId:     ses.GetTenantInfo().GetTenantID(),
+		RoleId:        ses.proc.SessionInfo.RoleId,
+		ResultPath:    buf.String(),
+		CreateTime:    types.UnixToTimestamp(ses.createdTime.Unix()),
+		ResultSize:    ses.curResultSize,
+		Columns:       string(b),
+		Tables:        getTablesFromPlan(ses.p),
+		UserId:        ses.GetTenantInfo().GetUserID(),
+		ExpiredTime:   types.UnixToTimestamp(ses.expiredTime.Unix()),
+		Plan:          string(sp),
+		Ast:           string(st),
+		ColumnMap:     colMap,
+		SaveRowCount:  ses.savedRowCount,
+		QueryRowCount: ses.queryRowCount,
 	}
 	metaBat, err := buildQueryResultMetaBatch(m, ses.pool)
 	if err != nil {
@@ -499,6 +514,12 @@ func buildQueryResultMetaBatch(m *catalog.Meta, mp *mpool.MPool) (*batch.Batch, 
 		return nil, err
 	}
 	if err = vector.AppendBytes(bat.Vecs[catalog.COLUMN_MAP_IDX], []byte(m.ColumnMap), false, mp); err != nil {
+		return nil, err
+	}
+	if err = vector.AppendFixed(bat.Vecs[catalog.SAVED_ROW_COUNT_IDX], m.SaveRowCount, false, mp); err != nil {
+		return nil, err
+	}
+	if err = vector.AppendFixed(bat.Vecs[catalog.QUERY_ROW_COUNT_IDX], m.QueryRowCount, false, mp); err != nil {
 		return nil, err
 	}
 	return bat, nil

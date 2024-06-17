@@ -29,9 +29,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/matrixorigin/matrixone/pkg/vm/engine/disttae"
+
 	"github.com/google/uuid"
 	"github.com/panjf2000/ants/v2"
-	_ "go.uber.org/automaxprocs"
 	"go.uber.org/zap"
 
 	"github.com/matrixorigin/matrixone/pkg/catalog"
@@ -129,7 +130,13 @@ func NewCompile(
 	c.startAt = startAt
 	c.disableRetry = false
 	if c.proc.TxnOperator != nil {
+		// TODO: The action of updating the WriteOffset logic should be executed in the `func (c *Compile) Run(_ uint64)` method.
+		// However, considering that the delay ranges are not completed yet, the UpdateSnapshotWriteOffset() and
+		// the assignment of `Compile.TxnOffset` should be moved into the `func (c *Compile) Run(_ uint64)` method in the later stage.
 		c.proc.TxnOperator.GetWorkspace().UpdateSnapshotWriteOffset()
+		c.TxnOffset = c.proc.TxnOperator.GetWorkspace().GetSnapshotWriteOffset()
+	} else {
+		c.TxnOffset = 0
 	}
 	return c
 }
@@ -379,6 +386,8 @@ func (c *Compile) run(s *Scope) error {
 		} else {
 			return s.CreateTable(c)
 		}
+	case CreateView:
+		return s.CreateView(c)
 	case AlterView:
 		return s.AlterView(c)
 	case AlterTable:
@@ -745,6 +754,11 @@ func (c *Compile) compileScope(ctx context.Context, pn *plan.Plan) ([]*Scope, er
 		case plan.DataDefinition_CREATE_TABLE:
 			return []*Scope{
 				newScope(CreateTable).
+					withPlan(pn),
+			}, nil
+		case plan.DataDefinition_CREATE_VIEW:
+			return []*Scope{
+				newScope(CreateView).
 					withPlan(pn),
 			}, nil
 		case plan.DataDefinition_ALTER_VIEW:
@@ -2222,6 +2236,7 @@ func (c *Compile) compileTableScan(n *plan.Node) ([]*Scope, error) {
 func (c *Compile) compileTableScanWithNode(n *plan.Node, node engine.Node) (*Scope, error) {
 	s := newScope(Remote)
 	s.NodeInfo = node
+	s.TxnOffset = c.TxnOffset
 	s.DataSource = &Source{
 		node: n,
 	}
@@ -2246,10 +2261,19 @@ func (c *Compile) compileTableScanDataSource(s *Scope) error {
 	//-----------------------------------------------------------------------------------------------------
 	ctx := c.ctx
 	txnOp = c.proc.TxnOperator
+	err = disttae.CheckTxnIsValid(txnOp)
+	if err != nil {
+		return err
+	}
 	if n.ScanSnapshot != nil && n.ScanSnapshot.TS != nil {
 		if !n.ScanSnapshot.TS.Equal(timestamp.Timestamp{LogicalTime: 0, PhysicalTime: 0}) &&
 			n.ScanSnapshot.TS.Less(c.proc.TxnOperator.Txn().SnapshotTS) {
-			txnOp = c.proc.TxnOperator.CloneSnapshotOp(*n.ScanSnapshot.TS)
+			if c.proc.GetCloneTxnOperator() != nil {
+				txnOp = c.proc.GetCloneTxnOperator()
+			} else {
+				txnOp = c.proc.TxnOperator.CloneSnapshotOp(*n.ScanSnapshot.TS)
+				c.proc.SetCloneTxnOperator(txnOp)
+			}
 
 			if n.ScanSnapshot.Tenant != nil {
 				ctx = context.WithValue(ctx, defines.TenantIDKey{}, n.ScanSnapshot.Tenant.TenantID)
@@ -2262,7 +2286,10 @@ func (c *Compile) compileTableScanDataSource(s *Scope) error {
 		ts = txnOp.Txn().SnapshotTS
 	}
 	{
-		//ctx := c.ctx
+		err = disttae.CheckTxnIsValid(txnOp)
+		if err != nil {
+			return err
+		}
 		if util.TableIsClusterTable(n.TableDef.GetTableType()) {
 			ctx = defines.AttachAccountId(ctx, catalog.System_Account)
 		}
@@ -2785,11 +2812,15 @@ func (c *Compile) compileSort(n *plan.Node, ss []*Scope) []*Scope {
 			}
 			defer vec2.Free(c.proc.Mp())
 
-			limit, offset := vector.MustFixedCol[int64](vec1)[0], vector.MustFixedCol[int64](vec2)[0]
+			limit, offset := vector.MustFixedCol[uint64](vec1)[0], vector.MustFixedCol[uint64](vec2)[0]
 			topN := limit + offset
-			if topN <= 8192*2 {
+			overflow := false
+			if topN < limit || topN < offset {
+				overflow = true
+			}
+			if !overflow && topN <= 8192*2 {
 				// if n is small, convert `order by col limit m offset n` to `top m+n offset n`
-				return c.compileOffset(n, c.compileTop(n, plan2.MakePlan2Int64ConstExprWithType(topN), ss))
+				return c.compileOffset(n, c.compileTop(n, plan2.MakePlan2Uint64ConstExprWithType(topN), ss))
 			}
 		}
 		return c.compileLimit(n, c.compileOffset(n, c.compileOrder(n, ss)))
@@ -3759,7 +3790,12 @@ func (c *Compile) expandRanges(n *plan.Node, rel engine.Relation, blockFilterLis
 	if n.ScanSnapshot != nil && n.ScanSnapshot.TS != nil {
 		if !n.ScanSnapshot.TS.Equal(timestamp.Timestamp{LogicalTime: 0, PhysicalTime: 0}) &&
 			n.ScanSnapshot.TS.Less(c.proc.TxnOperator.Txn().SnapshotTS) {
-			txnOp = c.proc.TxnOperator.CloneSnapshotOp(*n.ScanSnapshot.TS)
+			if c.proc.GetCloneTxnOperator() != nil {
+				txnOp = c.proc.GetCloneTxnOperator()
+			} else {
+				txnOp = c.proc.TxnOperator.CloneSnapshotOp(*n.ScanSnapshot.TS)
+				c.proc.SetCloneTxnOperator(txnOp)
+			}
 
 			if n.ScanSnapshot.Tenant != nil {
 				ctx = context.WithValue(ctx, defines.TenantIDKey{}, n.ScanSnapshot.Tenant.TenantID)
@@ -3782,7 +3818,7 @@ func (c *Compile) expandRanges(n *plan.Node, rel engine.Relation, blockFilterLis
 	if err != nil {
 		return nil, err
 	}
-	ranges, err = rel.Ranges(ctx, blockFilterList)
+	ranges, err = rel.Ranges(ctx, blockFilterList, c.TxnOffset)
 	if err != nil {
 		return nil, err
 	}
@@ -3795,7 +3831,7 @@ func (c *Compile) expandRanges(n *plan.Node, rel engine.Relation, blockFilterLis
 				if err != nil {
 					return nil, err
 				}
-				subranges, err := subrelation.Ranges(ctx, n.BlockFilterList)
+				subranges, err := subrelation.Ranges(ctx, n.BlockFilterList, c.TxnOffset)
 				if err != nil {
 					return nil, err
 				}
@@ -3817,7 +3853,7 @@ func (c *Compile) expandRanges(n *plan.Node, rel engine.Relation, blockFilterLis
 				if err != nil {
 					return nil, err
 				}
-				subranges, err := subrelation.Ranges(ctx, n.BlockFilterList)
+				subranges, err := subrelation.Ranges(ctx, n.BlockFilterList, c.TxnOffset)
 				if err != nil {
 					return nil, err
 				}
@@ -3851,7 +3887,9 @@ func (c *Compile) generateNodes(n *plan.Node) (engine.Nodes, []any, []types.T, e
 	if n.ScanSnapshot != nil && n.ScanSnapshot.TS != nil {
 		if !n.ScanSnapshot.TS.Equal(timestamp.Timestamp{LogicalTime: 0, PhysicalTime: 0}) &&
 			n.ScanSnapshot.TS.Less(c.proc.TxnOperator.Txn().SnapshotTS) {
+
 			txnOp = c.proc.TxnOperator.CloneSnapshotOp(*n.ScanSnapshot.TS)
+			c.proc.SetCloneTxnOperator(txnOp)
 
 			if n.ScanSnapshot.Tenant != nil {
 				ctx = context.WithValue(ctx, defines.TenantIDKey{}, n.ScanSnapshot.Tenant.TenantID)

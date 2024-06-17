@@ -149,6 +149,7 @@ func (s *store) newTAEStorage(ctx context.Context, shard metadata.TNShard, facto
 		GCTTL:          s.cfg.GCCfg.GCTTL.Duration,
 		ScanGCInterval: s.cfg.GCCfg.ScanGCInterval.Duration,
 		DisableGC:      s.cfg.GCCfg.DisableGC,
+		CheckGC:        s.cfg.GCCfg.CheckGC,
 	}
 
 	mergeCfg := &options.MergeConfig{
@@ -165,6 +166,7 @@ func (s *store) newTAEStorage(ctx context.Context, shard metadata.TNShard, facto
 		RPCStreamPoisonTime:    s.cfg.LogtailServer.LogtailRPCStreamPoisonTime.Duration,
 		LogtailCollectInterval: s.cfg.LogtailServer.LogtailCollectInterval.Duration,
 		ResponseSendTimeout:    s.cfg.LogtailServer.LogtailResponseSendTimeout.Duration,
+		PullWorkerPoolSize:     int64(s.cfg.LogtailServer.PullWorkerPoolSize),
 	}
 
 	// the previous values

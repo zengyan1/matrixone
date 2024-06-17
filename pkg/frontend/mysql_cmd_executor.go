@@ -18,11 +18,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	gotrace "runtime/trace"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -374,7 +376,7 @@ func handleShowTableStatus(ses *Session, execCtx *ExecCtx, stmt *tree.ShowTableS
 		sql := getSqlForRoleNameOfRoleId(int64(roleId))
 
 		var rets []ExecResult
-		if rets, err = executeSQLInBackgroundSession(ctx, ses, ses.GetMemPool(), sql); err != nil {
+		if rets, err = executeSQLInBackgroundSession(ctx, ses, sql); err != nil {
 			return "", err
 		}
 
@@ -444,6 +446,12 @@ func doUse(ctx context.Context, ses FeSession, db string) error {
 	var txn TxnOperator
 	var err error
 	var dbMeta engine.Database
+
+	// In order to be compatible with various GUI clients and BI tools, lower case db name if it's a mysql system db
+	if slices.Contains(mysql.CaseInsensitiveDbs, strings.ToLower(db)) {
+		db = strings.ToLower(db)
+	}
+
 	txn = txnHandler.GetTxn()
 	//TODO: check meta data
 	if dbMeta, err = getGlobalPu().StorageEngine.Database(ctx, db, txn); err != nil {
@@ -572,43 +580,35 @@ func doSetVar(ses *Session, execCtx *ExecCtx, sv *tree.SetVar, sql string) error
 		var oldValueRaw interface{}
 		if system {
 			if global {
-				err = doCheckRole(execCtx.reqCtx, ses)
-				if err != nil {
+				if err = doCheckRole(execCtx.reqCtx, ses); err != nil {
 					return err
 				}
-				err = ses.SetGlobalVar(execCtx.reqCtx, name, value)
-				if err != nil {
-					return err
-				}
-				err = doSetGlobalSystemVariable(execCtx.reqCtx, ses, name, value)
-				if err != nil {
+				if err = ses.SetGlobalSysVar(execCtx.reqCtx, name, value); err != nil {
 					return err
 				}
 			} else {
 				if strings.ToLower(name) == "autocommit" {
-					oldValueRaw, err = ses.GetSessionVar(execCtx.reqCtx, "autocommit")
-					if err != nil {
+					if oldValueRaw, err = ses.GetSessionSysVar("autocommit"); err != nil {
 						return err
 					}
 				}
-				err = ses.SetSessionVar(execCtx.reqCtx, name, value)
-				if err != nil {
+				if err = ses.SetSessionSysVar(execCtx.reqCtx, name, value); err != nil {
 					return err
 				}
-			}
+				if strings.ToLower(name) == "autocommit" {
+					var oldValue, newValue bool
 
-			if strings.ToLower(name) == "autocommit" {
-				oldValue, err := valueIsBoolTrue(oldValueRaw)
-				if err != nil {
-					return err
-				}
-				newValue, err := valueIsBoolTrue(value)
-				if err != nil {
-					return err
-				}
-				err = ses.GetTxnHandler().SetAutocommit(execCtx, oldValue, newValue)
-				if err != nil {
-					return err
+					if oldValue, err = valueIsBoolTrue(oldValueRaw); err != nil {
+						return err
+					}
+
+					if newValue, err = valueIsBoolTrue(value); err != nil {
+						return err
+					}
+
+					if err = ses.GetTxnHandler().SetAutocommit(execCtx, oldValue, newValue); err != nil {
+						return err
+					}
 				}
 			}
 		} else {
@@ -619,6 +619,7 @@ func doSetVar(ses *Session, execCtx *ExecCtx, sv *tree.SetVar, sql string) error
 		}
 		return nil
 	}
+
 	for _, assign := range sv.Assignments {
 		name := assign.Name
 		var value interface{}
@@ -646,14 +647,6 @@ func doSetVar(ses *Session, execCtx *ExecCtx, sv *tree.SetVar, sql string) error
 				if err != nil {
 					return err
 				}
-			}
-		} else if name == "syspublications" {
-			if !ses.GetTenantInfo().IsSysTenant() {
-				return moerr.NewInternalError(execCtx.reqCtx, "only system account can set system variable syspublications")
-			}
-			err = setVarFunc(assign.System, assign.Global, name, value, sql)
-			if err != nil {
-				return err
 			}
 		} else if name == "clear_privilege_cache" {
 			//if it is global variable, it does nothing.
@@ -710,6 +703,14 @@ func doSetVar(ses *Session, execCtx *ExecCtx, sv *tree.SetVar, sql string) error
 				return err
 			}
 			runtime.ProcessLevelRuntime().SetGlobalVariables("runtime_filter_limit_bloom_filter", value)
+		} else if name == "refresh_global_sys_vars_mgr" {
+			// refresh the cache of current account in GSysVarsMgr, load the newest data from `mo_mysql_compatibility_mode` table
+			if value.(int64) == 1 {
+				GSysVarsMgr.Put(ses.GetAccountId(), nil)
+				if err = ses.InitSystemVariables(execCtx.reqCtx); err != nil {
+					return err
+				}
+			}
 		} else {
 			err = setVarFunc(assign.System, assign.Global, name, value, sql)
 			if err != nil {
@@ -757,7 +758,7 @@ func doShowErrors(ses *Session, execCtx *ExecCtx) error {
 	for i := info.length() - 1; i >= 0; i-- {
 		row := make([]interface{}, 3)
 		row[0] = "Error"
-		row[1] = info.codes[i]
+		row[1] = int16(info.codes[i])
 		row[2] = info.msgs[i]
 		mrs.AddRow(row)
 	}
@@ -802,18 +803,9 @@ func doShowVariables(ses *Session, execCtx *ExecCtx, sv *tree.ShowVariables) err
 		likePattern = strings.ToLower(sv.Like.Right.String())
 	}
 
-	var sysVars map[string]interface{}
-	if sv.Global {
-		sysVars, err = doGetGlobalSystemVariable(execCtx.reqCtx, ses)
-		if err != nil {
-			return err
-		}
-	} else {
-		sysVars = ses.CopyAllSessionVars()
-	}
-
-	rows := make([][]interface{}, 0, len(sysVars))
-	for name, value := range sysVars {
+	rows := make([][]interface{}, 0, len(gSysVarsDefs))
+	//for name, value := range sysVars {
+	for name, def := range gSysVarsDefs {
 		if hasLike {
 			s := name
 			if isIlike {
@@ -823,21 +815,26 @@ func doShowVariables(ses *Session, execCtx *ExecCtx, sv *tree.ShowVariables) err
 				continue
 			}
 		}
-		row := make([]interface{}, 2)
-		row[0] = name
-		gsv, ok := GSysVariables.GetDefinitionOfSysVar(name)
-		if !ok {
-			return moerr.NewInternalError(execCtx.reqCtx, errorSystemVariableDoesNotExist())
-		}
-		row[1] = value
-		if svbt, ok2 := gsv.GetType().(SystemVariableBoolType); ok2 {
-			if svbt.IsTrue(value) {
-				row[1] = "on"
-			} else {
-				row[1] = "off"
+
+		var value interface{}
+		if sv.Global {
+			if value, err = ses.GetGlobalSysVar(name); err != nil {
+				continue
+			}
+		} else {
+			if value, err = ses.GetSessionSysVar(name); err != nil {
+				continue
 			}
 		}
-		rows = append(rows, row)
+
+		if boolType, ok := def.GetType().(SystemVariableBoolType); ok {
+			if boolType.IsTrue(value) {
+				value = "on"
+			} else {
+				value = "off"
+			}
+		}
+		rows = append(rows, []interface{}{name, value})
 	}
 
 	if sv.Where != nil {
@@ -1034,17 +1031,12 @@ func handlePrepareStmt(ses FeSession, execCtx *ExecCtx, st *tree.PrepareStmt) (*
 }
 
 func doPrepareString(ses *Session, execCtx *ExecCtx, st *tree.PrepareString) (*PrepareStmt, error) {
-	v, err := ses.GetGlobalVar(execCtx.reqCtx, "lower_case_table_names")
+	v, err := ses.GetSessionSysVar("lower_case_table_names")
 	if err != nil {
 		return nil, err
 	}
 
-	origin, err := ses.GetGlobalVar(execCtx.reqCtx, "keep_user_target_list_in_result")
-	if err != nil {
-		return nil, err
-	}
-
-	stmts, err := mysql.Parse(execCtx.reqCtx, st.Sql, v.(int64), origin.(int64))
+	stmts, err := mysql.Parse(execCtx.reqCtx, st.Sql, v.(int64))
 	if err != nil {
 		return nil, err
 	}
@@ -1934,16 +1926,11 @@ var GetComputationWrapper = func(execCtx *ExecCtx, db string, user string, eng e
 
 func parseSql(execCtx *ExecCtx) (stmts []tree.Statement, err error) {
 	var v interface{}
-	var origin interface{}
-	v, err = execCtx.ses.GetGlobalVar(execCtx.reqCtx, "lower_case_table_names")
+	v, err = execCtx.ses.GetSessionSysVar("lower_case_table_names")
 	if err != nil {
 		v = int64(1)
 	}
-	origin, err = execCtx.ses.GetGlobalVar(execCtx.reqCtx, "keep_user_target_list_in_result")
-	if err != nil {
-		origin = int64(0)
-	}
-	stmts, err = parsers.Parse(execCtx.reqCtx, dialect.MYSQL, execCtx.input.getSql(), v.(int64), origin.(int64))
+	stmts, err = parsers.Parse(execCtx.reqCtx, dialect.MYSQL, execCtx.input.getSql(), v.(int64))
 	if err != nil {
 		return nil, err
 	}
@@ -2187,6 +2174,11 @@ func processLoadLocal(ses FeSession, execCtx *ExecCtx, param *tree.ExternParam, 
 	return
 }
 
+func makeCompactTxnInfo(op TxnOperator) string {
+	txn := op.Txn()
+	return fmt.Sprintf("%s:%s", hex.EncodeToString(txn.ID), txn.SnapshotTS.DebugString())
+}
+
 func executeStmtWithResponse(ses *Session,
 	execCtx *ExecCtx,
 ) (err error) {
@@ -2307,10 +2299,15 @@ func executeStmtWithWorkspace(ses FeSession,
 
 	//refresh txn id
 	ses.SetTxnId(txnOp.Txn().ID)
-	ses.SetStaticTxnId(txnOp.Txn().ID)
+	ses.SetStaticTxnInfo(makeCompactTxnInfo(txnOp))
 
 	//refresh proc txnOp
 	execCtx.proc.TxnOperator = txnOp
+
+	err = disttae.CheckTxnIsValid(txnOp)
+	if err != nil {
+		return err
+	}
 
 	//!!!NOTE!!!: statement management
 	//2. start statement on workspace
@@ -2341,6 +2338,12 @@ func executeStmtWithIncrStmt(ses FeSession,
 ) (err error) {
 	ses.EnterFPrint(6)
 	defer ses.ExitFPrint(6)
+
+	err = disttae.CheckTxnIsValid(txnOp)
+	if err != nil {
+		return err
+	}
+
 	if ses.IsDerivedStmt() {
 		return
 	}
@@ -2830,7 +2833,7 @@ func ExecRequest(ses *Session, execCtx *ExecCtx, req *Request) (resp *Response, 
 	case COM_QUIT:
 		return resp, moerr.GetMysqlClientQuit()
 	case COM_QUERY:
-		var query = string(req.GetData().([]byte))
+		var query = util.UnsafeBytesToString(req.GetData().([]byte))
 		ses.addSqlCount(1)
 		ses.Debug(execCtx.reqCtx, "query trace", logutil.QueryField(SubStringFromBegin(query, int(getGlobalPu().SV.LengthOfQueryPrinted))))
 		err = doComQuery(ses, execCtx, &UserInput{sql: query})
@@ -2839,7 +2842,7 @@ func ExecRequest(ses *Session, execCtx *ExecCtx, req *Request) (resp *Response, 
 		}
 		return resp, nil
 	case COM_INIT_DB:
-		var dbname = string(req.GetData().([]byte))
+		var dbname = util.UnsafeBytesToString(req.GetData().([]byte))
 		ses.addSqlCount(1)
 		query := "use `" + dbname + "`"
 		err = doComQuery(ses, execCtx, &UserInput{sql: query})
@@ -2849,7 +2852,7 @@ func ExecRequest(ses *Session, execCtx *ExecCtx, req *Request) (resp *Response, 
 
 		return resp, nil
 	case COM_FIELD_LIST:
-		var payload = string(req.GetData().([]byte))
+		var payload = util.UnsafeBytesToString(req.GetData().([]byte))
 		ses.addSqlCount(1)
 		query := makeCmdFieldListSql(payload)
 		err = doComQuery(ses, execCtx, &UserInput{sql: query})
@@ -2865,7 +2868,7 @@ func ExecRequest(ses *Session, execCtx *ExecCtx, req *Request) (resp *Response, 
 
 	case COM_STMT_PREPARE:
 		ses.SetCmd(COM_STMT_PREPARE)
-		sql = string(req.GetData().([]byte))
+		sql = util.UnsafeBytesToString(req.GetData().([]byte))
 		ses.addSqlCount(1)
 
 		// rewrite to "Prepare stmt_name from 'xxx'"
@@ -2882,9 +2885,8 @@ func ExecRequest(ses *Session, execCtx *ExecCtx, req *Request) (resp *Response, 
 
 	case COM_STMT_EXECUTE:
 		ses.SetCmd(COM_STMT_EXECUTE)
-		data := req.GetData().([]byte)
 		var prepareStmt *PrepareStmt
-		sql, prepareStmt, err = parseStmtExecute(execCtx.reqCtx, ses, data)
+		sql, prepareStmt, err = parseStmtExecute(execCtx.reqCtx, ses, req.GetData().([]byte))
 		if err != nil {
 			return NewGeneralErrorResponse(COM_STMT_EXECUTE, ses.GetTxnHandler().GetServerStatus(), err), nil
 		}
@@ -2902,8 +2904,7 @@ func ExecRequest(ses *Session, execCtx *ExecCtx, req *Request) (resp *Response, 
 
 	case COM_STMT_SEND_LONG_DATA:
 		ses.SetCmd(COM_STMT_SEND_LONG_DATA)
-		data := req.GetData().([]byte)
-		err = parseStmtSendLongData(execCtx.reqCtx, ses, data)
+		err = parseStmtSendLongData(execCtx.reqCtx, ses, req.GetData().([]byte))
 		if err != nil {
 			resp = NewGeneralErrorResponse(COM_STMT_SEND_LONG_DATA, ses.GetTxnHandler().GetServerStatus(), err)
 			return resp, nil
@@ -2911,10 +2912,8 @@ func ExecRequest(ses *Session, execCtx *ExecCtx, req *Request) (resp *Response, 
 		return nil, nil
 
 	case COM_STMT_CLOSE:
-		data := req.GetData().([]byte)
-
 		// rewrite to "deallocate Prepare stmt_name"
-		stmtID := binary.LittleEndian.Uint32(data[0:4])
+		stmtID := binary.LittleEndian.Uint32(req.GetData().([]byte)[0:4])
 		stmtName := getPrepareStmtName(stmtID)
 		sql = fmt.Sprintf("deallocate prepare %s", stmtName)
 		ses.Debug(execCtx.reqCtx, "query trace", logutil.QueryField(sql))
@@ -2926,10 +2925,8 @@ func ExecRequest(ses *Session, execCtx *ExecCtx, req *Request) (resp *Response, 
 		return resp, nil
 
 	case COM_STMT_RESET:
-		data := req.GetData().([]byte)
-
 		//Payload of COM_STMT_RESET
-		stmtID := binary.LittleEndian.Uint32(data[0:4])
+		stmtID := binary.LittleEndian.Uint32(req.GetData().([]byte)[0:4])
 		stmtName := getPrepareStmtName(stmtID)
 		sql = fmt.Sprintf("reset prepare %s", stmtName)
 		ses.Debug(execCtx.reqCtx, "query trace", logutil.QueryField(sql))
@@ -2940,8 +2937,7 @@ func ExecRequest(ses *Session, execCtx *ExecCtx, req *Request) (resp *Response, 
 		return resp, nil
 
 	case COM_SET_OPTION:
-		data := req.GetData().([]byte)
-		err := handleSetOption(ses, execCtx, data)
+		err = handleSetOption(ses, execCtx, req.GetData().([]byte))
 		if err != nil {
 			resp = NewGeneralErrorResponse(COM_SET_OPTION, ses.GetTxnHandler().GetServerStatus(), err)
 		}

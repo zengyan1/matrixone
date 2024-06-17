@@ -37,6 +37,10 @@ type tableType string
 
 const view tableType = "VIEW"
 
+const (
+	PubDbName = "mo_pubs"
+)
+
 var (
 	insertIntoMoSnapshots = `insert into mo_catalog.mo_snapshots(
 		snapshot_id,
@@ -59,6 +63,10 @@ var (
 	checkSnapshotTsFormat = `select snapshot_id from mo_catalog.mo_snapshots where ts = %d order by snapshot_id;`
 
 	restoreTableDataFmt = "insert into `%s`.`%s` SELECT * FROM `%s`.`%s` {snapshot = '%s'}"
+
+	getDbPubCountWithSnapshotFormat = `select count(1) from mo_catalog.mo_pubs {snapshot = '%s'} where database_name = '%s';`
+
+	restorePubDbDataFmt = "insert into `%s`.`%s` SELECT * FROM `%s`.`%s` {snapshot = '%s'} WHERE  DATABASE_NAME = '%s'"
 
 	skipDbs = []string{"mysql", "system", "system_metrics", "mo_task", "mo_debug", "information_schema", "mo_catalog"}
 
@@ -97,6 +105,14 @@ var (
 		"mo_snapshots": 1,
 	}
 )
+
+func getSqlForGetDbPubCountWithSnapshot(ctx context.Context, snapshot string, dbName string) (string, error) {
+	err := inputNameIsInvalid(ctx, dbName)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(getDbPubCountWithSnapshotFormat, snapshot, dbName), nil
+}
 
 type snapshotRecord struct {
 	snapshotId   string
@@ -399,6 +415,12 @@ func doRestoreSnapshot(ctx context.Context, ses *Session, stmt *tree.RestoreSnap
 			return
 		}
 	}
+
+	// checks if the given context has been canceled.
+	if err = CancelCheck(ctx); err != nil {
+		return
+	}
+
 	return
 }
 
@@ -452,6 +474,11 @@ func restoreToAccount(
 		if needSkipDb(dbName) {
 			getLogger().Info(fmt.Sprintf("[%s]skip drop db: %v", snapshotName, dbName))
 			continue
+		}
+
+		// do some op to pub database
+		if err := checkPubAndDropPubRecord(toCtx, bh, snapshotName, dbName); err != nil {
+			return err
 		}
 
 		getLogger().Info(fmt.Sprintf("[%s]drop current exists db: %v", snapshotName, dbName))
@@ -533,6 +560,12 @@ func restoreToDatabaseOrTable(
 		return
 	}
 
+	if !restoreToTbl {
+		if err = checkAndRestorePublicationRecord(ctx, bh, snapshotName, dbName, toAccountId); err != nil {
+			return
+		}
+	}
+
 	tableInfos, err := getTableInfos(ctx, bh, snapshotName, dbName, tblName)
 	if err != nil {
 		return
@@ -559,6 +592,11 @@ func restoreToDatabaseOrTable(
 		if tblInfo.typ == view {
 			viewMap[key] = tblInfo
 			continue
+		}
+
+		// checks if the given context has been canceled.
+		if err = CancelCheck(ctx); err != nil {
+			return
 		}
 
 		if err = recreateTable(ctx, bh, snapshotName, tblInfo, toAccountId); err != nil {
@@ -592,6 +630,12 @@ func restoreSystemDatabase(
 		}
 
 		getLogger().Info(fmt.Sprintf("[%s] start to restore system table: %v.%v", snapshotName, moCatalog, tblInfo.tblName))
+
+		// checks if the given context has been canceled.
+		if err = CancelCheck(ctx); err != nil {
+			return
+		}
+
 		if err = recreateTable(ctx, bh, snapshotName, tblInfo, toAccountId); err != nil {
 			return
 		}
@@ -643,7 +687,7 @@ func restoreViews(
 
 	g := topsort{next: make(map[string][]string)}
 	for key, view := range viewMap {
-		stmts, err := parsers.Parse(ctx, dialect.MYSQL, view.createSql, 1, 0)
+		stmts, err := parsers.Parse(ctx, dialect.MYSQL, view.createSql, 1)
 		if err != nil {
 			return err
 		}
@@ -673,7 +717,7 @@ func restoreViews(
 		if tblInfo, ok := viewMap[key]; ok {
 			getLogger().Info(fmt.Sprintf("[%s] start to restore view: %v", snapshotName, tblInfo.tblName))
 
-			if err = bh.Exec(toCtx, "use "+tblInfo.dbName); err != nil {
+			if err = bh.Exec(toCtx, "use `"+tblInfo.dbName+"`"); err != nil {
 				return err
 			}
 
@@ -703,7 +747,7 @@ func recreateTable(
 
 	ctx = defines.AttachAccountId(ctx, toAccountId)
 
-	if err = bh.Exec(ctx, fmt.Sprintf("use %s", tblInfo.dbName)); err != nil {
+	if err = bh.Exec(ctx, fmt.Sprintf("use `%s`", tblInfo.dbName)); err != nil {
 		return
 	}
 
@@ -1154,5 +1198,107 @@ func fkTablesTopoSort(ctx context.Context, bh BackgroundExec, snapshotName strin
 		}
 	}
 	sortedTbls, err = g.sort()
+	return
+}
+
+// checkPubAndDropPubRecord checks if the database is publicated, if so, delete the publication
+func checkPubAndDropPubRecord(
+	ctx context.Context,
+	bh BackgroundExec,
+	snapshotName string,
+	dbName string) (err error) {
+	// check if the database is publicated
+	sql, err := getSqlForDbPubCount(ctx, dbName)
+	if err != nil {
+		return
+	}
+	getLogger().Info(fmt.Sprintf("[%s] start to check if db '%v' is publicated, check sql: %s", snapshotName, dbName, sql))
+
+	bh.ClearExecResultSet()
+	if err = bh.Exec(ctx, sql); err != nil {
+		return
+	}
+
+	erArray, err := getResultSet(ctx, bh)
+	if err != nil {
+		return
+	}
+
+	if execResultArrayHasData(erArray) {
+		var pubCount int64
+		if pubCount, err = erArray[0].GetInt64(ctx, 0, 0); err != nil {
+			return
+		}
+		if pubCount > 0 {
+			// drop the publication
+			sql, err = getSqlForDeletePubFromDatabase(ctx, dbName)
+			if err != nil {
+				return
+			}
+			getLogger().Info(fmt.Sprintf("[%s] start to drop publication for db '%v', drop sql: %s", snapshotName, dbName, sql))
+			if err = bh.Exec(ctx, sql); err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
+// checkAndRestorePublicationRecord checks if the database is publicated, if so, restore the publication record
+func checkAndRestorePublicationRecord(
+	ctx context.Context,
+	bh BackgroundExec,
+	snapshotName string,
+	dbName string,
+	toAccountId uint32) (err error) {
+
+	// check if the database is publicated
+	sql, err := getSqlForGetDbPubCountWithSnapshot(ctx, snapshotName, dbName)
+	if err != nil {
+		return
+	}
+
+	getLogger().Info(fmt.Sprintf("[%s] start to check if db '%v' is publicated, check sql: %s", snapshotName, dbName, sql))
+
+	bh.ClearExecResultSet()
+	if err = bh.Exec(ctx, sql); err != nil {
+		return
+	}
+
+	erArray, err := getResultSet(ctx, bh)
+	if err != nil {
+		return
+	}
+
+	if execResultArrayHasData(erArray) {
+		var pubCount int64
+		if pubCount, err = erArray[0].GetInt64(ctx, 0, 0); err != nil {
+			return
+		}
+		if pubCount > 0 {
+			// restore the publication record
+			var curAccountId uint32
+			curAccountId, err = defines.GetAccountId(ctx)
+			if err != nil {
+				return
+			}
+
+			ctx = defines.AttachAccountId(ctx, toAccountId)
+
+			// insert data
+			insertIntoSql := fmt.Sprintf(restorePubDbDataFmt, moCatalog, PubDbName, moCatalog, PubDbName, snapshotName, dbName)
+			getLogger().Info(fmt.Sprintf("[%s] start to restore db '%s' pub record, insert sql: %s", snapshotName, PubDbName, insertIntoSql))
+
+			if curAccountId == toAccountId {
+				if err = bh.Exec(ctx, insertIntoSql); err != nil {
+					return
+				}
+			} else {
+				if err = bh.ExecRestore(ctx, insertIntoSql, curAccountId, toAccountId); err != nil {
+					return
+				}
+			}
+		}
+	}
 	return
 }

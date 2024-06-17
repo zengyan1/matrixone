@@ -15,6 +15,9 @@
 package join
 
 import (
+	"fmt"
+	"runtime/debug"
+
 	"github.com/matrixorigin/matrixone/pkg/common/hashmap"
 	"github.com/matrixorigin/matrixone/pkg/common/reuse"
 	"github.com/matrixorigin/matrixone/pkg/container/batch"
@@ -114,6 +117,9 @@ func (arg *Argument) Release() {
 }
 
 func (arg *Argument) Free(proc *process.Process, pipelineFailed bool, err error) {
+	fmt.Println("Innerjoin Free", proc.Id)
+	fmt.Println(arg.Cond.String())
+	fmt.Println(debug.Stack())
 	ctr := arg.ctr
 	if ctr != nil {
 		ctr.cleanBatch(proc)

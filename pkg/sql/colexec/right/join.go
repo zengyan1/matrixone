@@ -16,6 +16,8 @@ package right
 
 import (
 	"bytes"
+	"fmt"
+	"runtime/debug"
 
 	"github.com/matrixorigin/matrixone/pkg/common/bitmap"
 	"github.com/matrixorigin/matrixone/pkg/common/moerr"
@@ -36,6 +38,9 @@ func (arg *Argument) String(buf *bytes.Buffer) {
 }
 
 func (arg *Argument) Prepare(proc *process.Process) (err error) {
+	fmt.Println("Rightjoin Prepare", proc.Id)
+	fmt.Println(arg.Cond.String())
+	fmt.Println(debug.Stack())
 	ap := arg
 	ap.ctr = new(container)
 	ap.ctr.InitReceiver(proc, false)
@@ -179,6 +184,7 @@ func (ctr *container) build(anal process.Analyze) error {
 }
 
 func (ctr *container) sendLast(ap *Argument, proc *process.Process, analyze process.Analyze, _ bool, isLast bool, result *vm.CallResult) (bool, error) {
+	fmt.Println("Rightjoin Sendlast", proc.Id, ap.NumCPU, ap.IsMerger)
 	ctr.handledLast = true
 
 	if ctr.matched == nil {

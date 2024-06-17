@@ -16,6 +16,8 @@ package join
 
 import (
 	"bytes"
+	"fmt"
+	"runtime/debug"
 
 	"github.com/matrixorigin/matrixone/pkg/common/hashmap"
 	"github.com/matrixorigin/matrixone/pkg/common/moerr"
@@ -34,6 +36,9 @@ func (arg *Argument) String(buf *bytes.Buffer) {
 }
 
 func (arg *Argument) Prepare(proc *process.Process) (err error) {
+	fmt.Println("Innerjoin Prepare", proc.Id)
+	fmt.Println(arg.Cond.String())
+	fmt.Println(debug.Stack())
 	ap := arg
 	ap.ctr = new(container)
 	ap.ctr.InitReceiver(proc, false)

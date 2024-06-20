@@ -62,9 +62,17 @@ import (
 	"github.com/matrixorigin/matrixone/pkg/vm/process"
 )
 
+var scopemap map[*Scope]bool = make(map[*Scope]bool)
+
 func newScope(magic magicType) *Scope {
 	s := reuse.Alloc[Scope](nil)
 	s.Magic = magic
+	v, ok := scopemap[s]
+	if !ok || !v {
+		scopemap[s] = true
+	} else {
+		panic("reuse Scope before release")
+	}
 	return s
 }
 
@@ -83,6 +91,12 @@ func (s *Scope) release() {
 	if s == nil {
 		return
 	}
+	v := scopemap[s]
+	if v {
+		scopemap[s] = false
+	} else {
+		panic("release Scope before reuse")
+	}
 	for i := range s.PreScopes {
 		s.PreScopes[i].release()
 	}
@@ -91,6 +105,18 @@ func (s *Scope) release() {
 		s.Instructions[i].Arg = nil
 	}
 	reuse.Free[Scope](s, nil)
+}
+
+func (s *Scope) CheckReuse() {
+	if s == nil {
+		return
+	}
+	if !scopemap[s] {
+		panic("Scope released in running")
+	}
+	for i := range s.PreScopes {
+		s.PreScopes[i].CheckReuse()
+	}
 }
 
 func (s *Scope) initDataSource(c *Compile) (err error) {

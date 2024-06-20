@@ -333,6 +333,10 @@ func (c *Compile) run(s *Scope) error {
 		return nil
 	}
 
+	s.CheckReuse()
+	defer func() {
+		s.CheckReuse()
+	}()
 	switch s.Magic {
 	case Normal:
 		defer c.fillAnalyzeInfo()

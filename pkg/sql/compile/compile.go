@@ -4064,13 +4064,13 @@ func checkAggOptimize(n *plan.Node) ([]any, []types.T, map[int]int) {
 		args := agg.F.Args[0]
 		switch name {
 		case "starcount":
-			partialResults = append(partialResults, int64(0))
+			partialResults[i] = int64(0)
 			partialResultTypes[i] = types.T_int64
 		case "count":
 			if (uint64(agg.F.Func.Obj) & function.Distinct) != 0 {
 				return nil, nil, nil
 			} else {
-				partialResults = append(partialResults, int64(0))
+				partialResults[i] = int64(0)
 				partialResultTypes[i] = types.T_int64
 			}
 			col, ok := args.Expr.(*plan.Expr_Col)
@@ -4083,7 +4083,7 @@ func checkAggOptimize(n *plan.Node) ([]any, []types.T, map[int]int) {
 				columnMap[int(col.Col.ColPos)] = int(n.TableDef.Cols[int(col.Col.ColPos)].Seqnum)
 			}
 		case "min", "max":
-			partialResults = append(partialResults, nil)
+			partialResults[i] = nil
 			col, ok := args.Expr.(*plan.Expr_Col)
 			if !ok {
 				return nil, nil, nil

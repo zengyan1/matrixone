@@ -17,6 +17,7 @@ package dispatch
 import (
 	"bytes"
 	"context"
+	"time"
 
 	"github.com/matrixorigin/matrixone/pkg/logutil"
 
@@ -42,6 +43,7 @@ func (dispatch *Dispatch) OpType() vm.OpType {
 }
 
 func (dispatch *Dispatch) Prepare(proc *process.Process) error {
+	dispatch.dtime = 0
 	ctr := new(container)
 	dispatch.ctr = ctr
 	ctr.localRegsCnt = len(dispatch.LocalRegs)
@@ -130,6 +132,7 @@ func (dispatch *Dispatch) Call(proc *process.Process) (vm.CallResult, error) {
 	ap := dispatch
 
 	result, err := dispatch.Children[0].Call(proc)
+	dtime := time.Now()
 	if err != nil {
 		return result, err
 	}
@@ -173,6 +176,7 @@ func (dispatch *Dispatch) Call(proc *process.Process) (vm.CallResult, error) {
 	}
 
 	ok, err := ap.ctr.sendFunc(sendBat, ap, proc)
+	dispatch.dtime += time.Since(dtime)
 	if ok {
 		result.Status = vm.ExecStop
 		return result, err

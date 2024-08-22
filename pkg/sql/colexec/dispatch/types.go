@@ -15,6 +15,7 @@
 package dispatch
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -81,6 +82,7 @@ type Dispatch struct {
 	// for shuffle dispatch
 	ShuffleRegIdxLocal  []int
 	ShuffleRegIdxRemote []int
+	dtime               time.Duration
 
 	vm.OperatorBase
 }
@@ -117,6 +119,7 @@ func (dispatch *Dispatch) Release() {
 }
 
 func (dispatch *Dispatch) Reset(proc *process.Process, pipelineFailed bool, err error) {
+	fmt.Println("dispatch!!!", dispatch.dtime)
 	if dispatch.ctr != nil {
 		if dispatch.ctr.isRemote {
 			for _, r := range dispatch.ctr.remoteReceivers {

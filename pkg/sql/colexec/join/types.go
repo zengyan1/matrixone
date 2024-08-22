@@ -15,6 +15,9 @@
 package join
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/matrixorigin/matrixone/pkg/common/reuse"
 	"github.com/matrixorigin/matrixone/pkg/container/batch"
 	"github.com/matrixorigin/matrixone/pkg/container/types"
@@ -82,6 +85,8 @@ type InnerJoin struct {
 	ShuffleIdx         int32
 	RuntimeFilterSpecs []*plan.RuntimeFilterSpec
 	JoinMapTag         int32
+	childtime          time.Duration
+	probetime          time.Duration
 
 	vm.OperatorBase
 	colexec.Projection
@@ -119,6 +124,9 @@ func (innerJoin *InnerJoin) Release() {
 }
 
 func (innerJoin *InnerJoin) Reset(proc *process.Process, pipelineFailed bool, err error) {
+	if innerJoin.HashOnPK {
+		fmt.Println("?????", innerJoin.childtime, innerJoin.probetime)
+	}
 	ctr := &innerJoin.ctr
 	anal := proc.GetAnalyze(innerJoin.GetIdx(), innerJoin.GetParallelIdx(), innerJoin.GetParallelMajor())
 

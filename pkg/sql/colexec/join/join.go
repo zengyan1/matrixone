@@ -16,7 +16,6 @@ package join
 
 import (
 	"bytes"
-	"fmt"
 	"time"
 
 	"github.com/matrixorigin/matrixone/pkg/vm/message"
@@ -42,6 +41,8 @@ func (innerJoin *InnerJoin) OpType() vm.OpType {
 }
 
 func (innerJoin *InnerJoin) Prepare(proc *process.Process) (err error) {
+	innerJoin.childtime = 0
+	innerJoin.probetime = 0
 	if len(innerJoin.ctr.vecs) == 0 {
 		innerJoin.ctr.vecs = make([]*vector.Vector, len(innerJoin.Conditions[0]))
 		innerJoin.ctr.executor = make([]colexec.ExpressionExecutor, len(innerJoin.Conditions[0]))
@@ -92,7 +93,7 @@ func (innerJoin *InnerJoin) Call(proc *process.Process) (vm.CallResult, error) {
 				cnow := time.Now()
 				input, err = innerJoin.Children[0].Call(proc)
 				if innerJoin.HashOnPK {
-					fmt.Println("!!!!!", float64(time.Since(cnow)/time.Millisecond))
+					innerJoin.childtime += time.Since(cnow)
 				}
 				if err != nil {
 					return input, err
@@ -124,7 +125,7 @@ func (innerJoin *InnerJoin) Call(proc *process.Process) (vm.CallResult, error) {
 				return result, err
 			}
 			if innerJoin.HashOnPK {
-				fmt.Println("?????", float64(time.Since(tnow)/time.Millisecond))
+				innerJoin.probetime += time.Since(tnow)
 			}
 			if innerJoin.ctr.lastrow == 0 {
 				innerJoin.ctr.inbat = nil

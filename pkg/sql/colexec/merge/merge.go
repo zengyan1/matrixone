@@ -16,6 +16,7 @@ package merge
 
 import (
 	"bytes"
+	"time"
 
 	"github.com/matrixorigin/matrixone/pkg/container/batch"
 	"github.com/matrixorigin/matrixone/pkg/vm"
@@ -35,6 +36,8 @@ func (merge *Merge) OpType() vm.OpType {
 }
 
 func (merge *Merge) Prepare(proc *process.Process) error {
+	merge.duptime = 0
+	merge.retime = 0
 	if merge.Partial {
 		merge.ctr.InitReceiver(proc, proc.Reg.MergeReceivers[merge.StartIDX:merge.EndIDX])
 	} else {
@@ -56,7 +59,9 @@ func (merge *Merge) Call(proc *process.Process) (vm.CallResult, error) {
 
 	var err error
 	for {
+		rt := time.Now()
 		msg = merge.ctr.ReceiveFromAllRegs(anal)
+		merge.retime += time.Since(rt)
 		if msg.Err != nil {
 			return vm.CancelResult, msg.Err
 		}
@@ -69,6 +74,7 @@ func (merge *Merge) Call(proc *process.Process) (vm.CallResult, error) {
 			continue
 		}
 
+		dt := time.Now()
 		if merge.ctr.buf != nil {
 			merge.ctr.buf.CleanOnlyData()
 		}
@@ -79,6 +85,7 @@ func (merge *Merge) Call(proc *process.Process) (vm.CallResult, error) {
 		} else {
 			bat, err = merge.ctr.buf.AppendWithCopy(proc.Ctx, proc.GetMPool(), msg.Batch)
 		}
+		merge.duptime += time.Since(dt)
 		if err != nil {
 			proc.PutBatch(msg.Batch)
 			return vm.CancelResult, err

@@ -119,6 +119,9 @@ func (innerJoin *InnerJoin) Call(proc *process.Process) (vm.CallResult, error) {
 			if err := ctr.probe(innerJoin, proc, &probeResult); err != nil {
 				return result, err
 			}
+			if ctr.inbat.RowCount() > 1900 && ctr.inbat.RowCount() < 2000 {
+				fmt.Println("?????", (time.Since(tnow)))
+			}
 			if innerJoin.ctr.lastrow == 0 {
 				innerJoin.ctr.inbat = nil
 			} else if innerJoin.ctr.lastrow == startrow {
@@ -131,10 +134,6 @@ func (innerJoin *InnerJoin) Call(proc *process.Process) (vm.CallResult, error) {
 			}
 
 			anal.Output(result.Batch, innerJoin.GetIsLast())
-			if ctr.inbat.RowCount() > 1900 && ctr.inbat.RowCount() < 2000 {
-				fmt.Println("?????", (time.Since(tnow)))
-			}
-
 			return result, nil
 
 		default:

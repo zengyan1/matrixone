@@ -92,7 +92,7 @@ func (innerJoin *InnerJoin) Call(proc *process.Process) (vm.CallResult, error) {
 				cnow := time.Now()
 				input, err = innerJoin.Children[0].Call(proc)
 				if innerJoin.HashOnPK {
-					fmt.Println("!!!!!", (time.Since(cnow) / time.Nanosecond))
+					fmt.Println("!!!!!", float64(time.Since(cnow)/time.Millisecond))
 				}
 				if err != nil {
 					return input, err
@@ -124,7 +124,7 @@ func (innerJoin *InnerJoin) Call(proc *process.Process) (vm.CallResult, error) {
 				return result, err
 			}
 			if innerJoin.HashOnPK {
-				fmt.Println("?????", (time.Since(tnow) / time.Nanosecond))
+				fmt.Println("?????", float64(time.Since(tnow)/time.Millisecond))
 			}
 			if innerJoin.ctr.lastrow == 0 {
 				innerJoin.ctr.inbat = nil

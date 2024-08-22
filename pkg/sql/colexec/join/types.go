@@ -125,7 +125,7 @@ func (innerJoin *InnerJoin) Release() {
 
 func (innerJoin *InnerJoin) Reset(proc *process.Process, pipelineFailed bool, err error) {
 	if innerJoin.HashOnPK {
-		fmt.Println("?????", innerJoin.childtime, innerJoin.probetime)
+		fmt.Println("innerjoin???", innerJoin.childtime, innerJoin.probetime, proc.Base.Id)
 	}
 	ctr := &innerJoin.ctr
 	anal := proc.GetAnalyze(innerJoin.GetIdx(), innerJoin.GetParallelIdx(), innerJoin.GetParallelMajor())

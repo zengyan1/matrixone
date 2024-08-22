@@ -88,7 +88,7 @@ func (merge *Merge) Release() {
 }
 
 func (merge *Merge) Reset(proc *process.Process, pipelineFailed bool, err error) {
-	fmt.Println("merge!!!", merge.retime, merge.duptime)
+	fmt.Println("merge!!!", merge.retime, merge.duptime, proc.Base.Id)
 	merge.ctr.FreeMergeTypeOperator(pipelineFailed)
 }
 

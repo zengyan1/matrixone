@@ -119,7 +119,7 @@ func (dispatch *Dispatch) Release() {
 }
 
 func (dispatch *Dispatch) Reset(proc *process.Process, pipelineFailed bool, err error) {
-	fmt.Println("dispatch!!!", dispatch.dtime)
+	fmt.Println("dispatch!!!", dispatch.dtime, proc.Base.Id)
 	if dispatch.ctr != nil {
 		if dispatch.ctr.isRemote {
 			for _, r := range dispatch.ctr.remoteReceivers {

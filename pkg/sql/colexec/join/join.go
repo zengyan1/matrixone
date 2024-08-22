@@ -41,6 +41,8 @@ func (innerJoin *InnerJoin) OpType() vm.OpType {
 }
 
 func (innerJoin *InnerJoin) Prepare(proc *process.Process) (err error) {
+	innerJoin.childtime = 0
+	innerJoin.probetime = 0
 	innerJoin.ctr = new(container)
 	innerJoin.ctr.vecs = make([]*vector.Vector, len(innerJoin.Conditions[0]))
 	innerJoin.ctr.evecs = make([]evalVector, len(innerJoin.Conditions[0]))
@@ -86,7 +88,12 @@ func (innerJoin *InnerJoin) Call(proc *process.Process) (vm.CallResult, error) {
 			}
 		case Probe:
 			if innerJoin.ctr.bat == nil {
+				cnow := time.Now()
 				result, err = innerJoin.Children[0].Call(proc)
+				if innerJoin.HashOnPK {
+					innerJoin.childtime += time.Since(cnow)
+				}
+
 				if err != nil {
 					return result, err
 				}
@@ -109,9 +116,14 @@ func (innerJoin *InnerJoin) Call(proc *process.Process) (vm.CallResult, error) {
 				innerJoin.ctr.lastrow = 0
 			}
 
+			tnow := time.Now()
+
 			startrow := innerJoin.ctr.lastrow
 			if err := ctr.probe(innerJoin, proc, anal, innerJoin.GetIsFirst(), &result); err != nil {
 				return result, err
+			}
+			if innerJoin.HashOnPK {
+				innerJoin.probetime += time.Since(tnow)
 			}
 			if innerJoin.ctr.lastrow == 0 {
 				innerJoin.ctr.bat = nil

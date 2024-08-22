@@ -16,6 +16,7 @@ package merge
 
 import (
 	"bytes"
+	"time"
 
 	"github.com/matrixorigin/matrixone/pkg/vm"
 
@@ -34,6 +35,8 @@ func (merge *Merge) OpType() vm.OpType {
 }
 
 func (merge *Merge) Prepare(proc *process.Process) error {
+	merge.duptime = 0
+	merge.retime = 0
 	merge.ctr = new(container)
 	if merge.Partial {
 		merge.ctr.InitReceiver(proc, proc.Reg.MergeReceivers[merge.StartIDX:merge.EndIDX])
@@ -59,7 +62,9 @@ func (merge *Merge) Call(proc *process.Process) (vm.CallResult, error) {
 	}
 
 	for {
+		rt := time.Now()
 		msg = merge.ctr.ReceiveFromAllRegs(anal)
+		merge.retime += time.Since(rt)
 		if msg.Err != nil {
 			result.Status = vm.ExecStop
 			return result, msg.Err

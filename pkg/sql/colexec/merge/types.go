@@ -15,6 +15,9 @@
 package merge
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/matrixorigin/matrixone/pkg/common/reuse"
 	"github.com/matrixorigin/matrixone/pkg/container/batch"
 	"github.com/matrixorigin/matrixone/pkg/sql/colexec"
@@ -36,6 +39,8 @@ type Merge struct {
 	Partial  bool  // false means listening on all merge receivers
 	StartIDX int32 // if partial, listening on receivers[start:end]
 	EndIDX   int32
+	retime   time.Duration
+	duptime  time.Duration
 	vm.OperatorBase
 }
 
@@ -87,6 +92,7 @@ func (merge *Merge) Reset(proc *process.Process, pipelineFailed bool, err error)
 }
 
 func (merge *Merge) Free(proc *process.Process, pipelineFailed bool, err error) {
+	fmt.Println("merge!!!", merge.retime, merge.duptime)
 	if merge.ctr != nil {
 		merge.ctr.FreeMergeTypeOperator(pipelineFailed)
 		if merge.ctr.buf != nil {

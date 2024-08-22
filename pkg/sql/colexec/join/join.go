@@ -16,6 +16,7 @@ package join
 
 import (
 	"bytes"
+	"fmt"
 	"time"
 
 	"github.com/matrixorigin/matrixone/pkg/vm/message"
@@ -112,6 +113,8 @@ func (innerJoin *InnerJoin) Call(proc *process.Process) (vm.CallResult, error) {
 				anal.Input(bat, innerJoin.GetIsFirst())
 			}
 
+			tnow := time.Now()
+
 			startrow := innerJoin.ctr.lastrow
 			if err := ctr.probe(innerJoin, proc, &probeResult); err != nil {
 				return result, err
@@ -128,6 +131,10 @@ func (innerJoin *InnerJoin) Call(proc *process.Process) (vm.CallResult, error) {
 			}
 
 			anal.Output(result.Batch, innerJoin.GetIsLast())
+			if ctr.inbat.RowCount() > 1900 && ctr.inbat.RowCount() < 2000 {
+				fmt.Println("?????", (time.Since(tnow)))
+			}
+
 			return result, nil
 
 		default:

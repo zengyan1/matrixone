@@ -823,7 +823,10 @@ func (c *Compile) compileQuery(qry *plan.Query) ([]*Scope, error) {
 	for i := len(qry.Steps) - 1; i >= 0; i-- {
 		var scopes []*Scope
 		var scope *Scope
+		st := time.Now()
 		scopes, err = c.compilePlanScope(int32(i), qry.Steps[i], qry.Nodes)
+		str := "CompilePlanScope," + c.proc.Base.Id + "," + fmt.Sprint(time.Since(st))
+		logutil.Infof(str)
 		if err != nil {
 			return nil, err
 		}

@@ -17,6 +17,7 @@ package unionall
 import (
 	"bytes"
 
+	"github.com/matrixorigin/matrixone/pkg/logutil"
 	"github.com/matrixorigin/matrixone/pkg/vm"
 	"github.com/matrixorigin/matrixone/pkg/vm/process"
 )
@@ -33,6 +34,7 @@ func (unionall *UnionAll) OpType() vm.OpType {
 }
 
 func (unionall *UnionAll) Prepare(proc *process.Process) error {
+	logutil.Infof("unionall," + proc.Base.Id)
 	return nil
 }
 

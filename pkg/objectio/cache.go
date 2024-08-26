@@ -93,7 +93,7 @@ func metaCacheSize() int64 {
 	if total < 32*mpool.GB {
 		return 1 * mpool.GB
 	}
-	return 4 * mpool.GB
+	return 8 * mpool.GB
 }
 
 func shardMetaCacheKey(key mataCacheKey) uint8 {

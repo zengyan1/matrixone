@@ -1537,14 +1537,15 @@ func tryMergeBetween(executor *FunctionExpressionExecutor, mp *mpool.MPool) *Fun
 	for i := range sels {
 		sels[i] = int64(i)
 	}
+	leftparameter1.noNeedToSetLength = true
 	leftparameter1.resultVector.SetClass(vector.FLAT)
 	leftparameter1.resultVector.Union(rightparameter1.resultVector, sels, mp)
+	leftparameter2.noNeedToSetLength = true
 	leftparameter2.resultVector.SetClass(vector.FLAT)
 	leftparameter2.resultVector.Union(rightparameter2.resultVector, sels, mp)
 
 	reuse.Free[FunctionExpressionExecutor](rightBetween, nil)
 	reuse.Free[FunctionExpressionExecutor](executor, nil)
 	logutil.Infof("Merge Between Once")
-	fmt.Println("???", leftparameter1.resultVector.Length(), leftparameter2.resultVector.Length())
 	return leftBetween
 }

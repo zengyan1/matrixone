@@ -211,7 +211,7 @@ func opBetweenFixed[T constraints.Integer | constraints.Float](
 			lb, _ := p1.GetValue(uint64(j))
 			ub, _ := p2.GetValue(uint64(j))
 			for i := uint64(0); i < rowCount; i++ {
-				if rss[i] {
+				if rss[i] && j != 0 {
 					continue
 				}
 				v0, null0 := p0.GetValue(i)
@@ -230,7 +230,7 @@ func opBetweenFixed[T constraints.Integer | constraints.Float](
 		lb, _ := p1.GetValue(uint64(j))
 		ub, _ := p2.GetValue(uint64(j))
 		for i := uint64(0); i < rowCount; i++ {
-			if rss[i] {
+			if rss[i] && j != 0 {
 				continue
 			}
 			v0, _ := p0.GetValue(i)
@@ -297,7 +297,7 @@ func opBetweenFixedWithFn[T types.FixedSizeTExceptStrType](
 			lb, _ := p1.GetValue(uint64(j))
 			ub, _ := p2.GetValue(uint64(j))
 			for i := uint64(0); i < rowCount; i++ {
-				if rss[i] {
+				if rss[i] && j != 0 {
 					continue
 				}
 				v0, null0 := p0.GetValue(i)
@@ -316,7 +316,7 @@ func opBetweenFixedWithFn[T types.FixedSizeTExceptStrType](
 		lb, _ := p1.GetValue(uint64(j))
 		ub, _ := p2.GetValue(uint64(j))
 		for i := uint64(0); i < rowCount; i++ {
-			if rss[i] {
+			if rss[i] && j != 0 {
 				continue
 			}
 			v0, _ := p0.GetValue(i)
@@ -382,7 +382,7 @@ func opBetweenBytes(
 			lb, _ := p1.GetStrValue(uint64(j))
 			ub, _ := p2.GetStrValue(uint64(j))
 			for i := uint64(0); i < rowCount; i++ {
-				if rss[i] {
+				if rss[i] && j != 0 {
 					continue
 				}
 				v0, null0 := p0.GetStrValue(i)
@@ -401,7 +401,7 @@ func opBetweenBytes(
 		lb, _ := p1.GetStrValue(uint64(j))
 		ub, _ := p2.GetStrValue(uint64(j))
 		for i := uint64(0); i < rowCount; i++ {
-			if rss[i] {
+			if rss[i] && j != 0 {
 				continue
 			}
 			v0, _ := p0.GetStrValue(i)

@@ -1545,5 +1545,6 @@ func tryMergeBetween(executor *FunctionExpressionExecutor, mp *mpool.MPool) *Fun
 	reuse.Free[FunctionExpressionExecutor](rightBetween, nil)
 	reuse.Free[FunctionExpressionExecutor](executor, nil)
 	logutil.Infof("Merge Between Once")
+	fmt.Println("???", leftparameter1.resultVector.Length(), leftparameter2.resultVector.Length())
 	return leftBetween
 }

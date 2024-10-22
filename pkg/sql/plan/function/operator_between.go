@@ -99,8 +99,16 @@ func opBetweenBool(
 	rss := vector.MustFixedColWithTypeCheck[bool](rsVec)
 
 	// The lower and upper bound of BETWEEN must be non-null constants, or it should be collapsed to "a >= b and a <= c"
+	// If the length of p1,p2 > 1, it means some BETWEEN connected by OR
 	lb, _ := p1.GetValue(0)
 	ub, _ := p2.GetValue(0)
+	betweenCount := p1.GetSourceVector().Length()
+	for i := 1; i < betweenCount; i++ {
+		li, _ := p1.GetValue(uint64(i))
+		lb = lb && li
+		ui, _ := p2.GetValue(uint64(i))
+		ub = ub || ui
+	}
 	alwaysTrue := lb != ub
 
 	if parameters[0].IsConst() {
@@ -161,18 +169,34 @@ func opBetweenFixed[T constraints.Integer | constraints.Float](
 	rss := vector.MustFixedColWithTypeCheck[bool](rsVec)
 
 	// The lower and upper bound of BETWEEN must be non-null constants, or it should be collapsed to "a >= b and a <= c"
-	lb, _ := p1.GetValue(0)
-	ub, _ := p2.GetValue(0)
+	// If the length of p1,p2 > 1, it means some BETWEEN connected by OR
 
 	if parameters[0].IsConst() {
+		lb, _ := p1.GetValue(0)
+		ub, _ := p2.GetValue(0)
 		v0, null0 := p0.GetValue(0)
 		if null0 {
 			nulls.AddRange(rsVec.GetNulls(), 0, uint64(length))
-		} else {
-			r := v0 >= lb && v0 <= ub
-			rowCount := uint64(length)
-			for i := uint64(0); i < rowCount; i++ {
-				rss[i] = r
+			return nil
+		}
+		r := v0 >= lb && v0 <= ub
+		rowCount := uint64(length)
+		for i := uint64(0); i < rowCount; i++ {
+			rss[i] = r
+		}
+		if r {
+			return nil
+		}
+		betweenCount := p1.GetSourceVector().Length()
+		for j := 1; j < betweenCount; j++ {
+			lb, _ = p1.GetValue(uint64(j))
+			ub, _ = p2.GetValue(uint64(j))
+			r = v0 >= lb && v0 <= ub
+			if r {
+				for i := uint64(0); i < rowCount; i++ {
+					rss[i] = r
+				}
+				break
 			}
 		}
 		return nil
@@ -182,20 +206,36 @@ func opBetweenFixed[T constraints.Integer | constraints.Float](
 	if p0.WithAnyNullValue() {
 		nulls.Set(rsVec.GetNulls(), parameters[0].GetNulls())
 		rowCount := uint64(length)
-		for i := uint64(0); i < rowCount; i++ {
-			v0, null0 := p0.GetValue(i)
-			if null0 {
-				continue
+		betweenCount := p1.GetSourceVector().Length()
+		for j := 0; j < betweenCount; j++ {
+			lb, _ := p1.GetValue(uint64(j))
+			ub, _ := p2.GetValue(uint64(j))
+			for i := uint64(0); i < rowCount; i++ {
+				if rss[i] {
+					continue
+				}
+				v0, null0 := p0.GetValue(i)
+				if null0 {
+					continue
+				}
+				rss[i] = v0 >= lb && v0 <= ub
 			}
-			rss[i] = v0 >= lb && v0 <= ub
 		}
 		return nil
 	}
 
 	rowCount := uint64(length)
-	for i := uint64(0); i < rowCount; i++ {
-		v0, _ := p0.GetValue(i)
-		rss[i] = v0 >= lb && v0 <= ub
+	betweenCount := p1.GetSourceVector().Length()
+	for j := 0; j < betweenCount; j++ {
+		lb, _ := p1.GetValue(uint64(j))
+		ub, _ := p2.GetValue(uint64(j))
+		for i := uint64(0); i < rowCount; i++ {
+			if rss[i] {
+				continue
+			}
+			v0, _ := p0.GetValue(i)
+			rss[i] = v0 >= lb && v0 <= ub
+		}
 	}
 	return nil
 }
@@ -215,18 +255,34 @@ func opBetweenFixedWithFn[T types.FixedSizeTExceptStrType](
 	rss := vector.MustFixedColWithTypeCheck[bool](rsVec)
 
 	// The lower and upper bound of BETWEEN must be non-null constants, or it should be collapsed to "a >= b and a <= c"
-	lb, _ := p1.GetValue(0)
-	ub, _ := p2.GetValue(0)
+	// If the length of p1,p2 > 1, it means some BETWEEN connected by OR
 
 	if parameters[0].IsConst() {
+		lb, _ := p1.GetValue(0)
+		ub, _ := p2.GetValue(0)
 		v0, null0 := p0.GetValue(0)
 		if null0 {
 			nulls.AddRange(rsVec.GetNulls(), 0, uint64(length))
-		} else {
-			r := lessEqualFn(lb, v0) && lessEqualFn(v0, ub)
-			rowCount := uint64(length)
-			for i := uint64(0); i < rowCount; i++ {
-				rss[i] = r
+			return nil
+		}
+		r := lessEqualFn(lb, v0) && lessEqualFn(v0, ub)
+		rowCount := uint64(length)
+		for i := uint64(0); i < rowCount; i++ {
+			rss[i] = r
+		}
+		if r {
+			return nil
+		}
+		betweenCount := p1.GetSourceVector().Length()
+		for j := 1; j < betweenCount; j++ {
+			lb, _ = p1.GetValue(uint64(j))
+			ub, _ = p2.GetValue(uint64(j))
+			r = lessEqualFn(lb, v0) && lessEqualFn(v0, ub)
+			if r {
+				for i := uint64(0); i < rowCount; i++ {
+					rss[i] = r
+				}
+				break
 			}
 		}
 		return nil
@@ -236,20 +292,36 @@ func opBetweenFixedWithFn[T types.FixedSizeTExceptStrType](
 	if p0.WithAnyNullValue() {
 		nulls.Set(rsVec.GetNulls(), parameters[0].GetNulls())
 		rowCount := uint64(length)
-		for i := uint64(0); i < rowCount; i++ {
-			v0, null0 := p0.GetValue(i)
-			if null0 {
-				continue
+		betweenCount := p1.GetSourceVector().Length()
+		for j := 0; j < betweenCount; j++ {
+			lb, _ := p1.GetValue(uint64(j))
+			ub, _ := p2.GetValue(uint64(j))
+			for i := uint64(0); i < rowCount; i++ {
+				if rss[i] {
+					continue
+				}
+				v0, null0 := p0.GetValue(i)
+				if null0 {
+					continue
+				}
+				rss[i] = lessEqualFn(lb, v0) && lessEqualFn(v0, ub)
 			}
-			rss[i] = lessEqualFn(lb, v0) && lessEqualFn(v0, ub)
 		}
 		return nil
 	}
 
 	rowCount := uint64(length)
-	for i := uint64(0); i < rowCount; i++ {
-		v0, _ := p0.GetValue(i)
-		rss[i] = lessEqualFn(lb, v0) && lessEqualFn(v0, ub)
+	betweenCount := p1.GetSourceVector().Length()
+	for j := 0; j < betweenCount; j++ {
+		lb, _ := p1.GetValue(uint64(j))
+		ub, _ := p2.GetValue(uint64(j))
+		for i := uint64(0); i < rowCount; i++ {
+			if rss[i] {
+				continue
+			}
+			v0, _ := p0.GetValue(i)
+			rss[i] = lessEqualFn(lb, v0) && lessEqualFn(v0, ub)
+		}
 	}
 	return nil
 }
@@ -268,18 +340,34 @@ func opBetweenBytes(
 	rss := vector.MustFixedColWithTypeCheck[bool](rsVec)
 
 	// The lower and upper bound of BETWEEN must be non-null constants, or it should be collapsed to "a >= b and a <= c"
-	lb, _ := p1.GetStrValue(0)
-	ub, _ := p2.GetStrValue(0)
+	// If the length of p1,p2 > 1, it means some BETWEEN connected by OR
 
 	if parameters[0].IsConst() {
+		lb, _ := p1.GetStrValue(0)
+		ub, _ := p2.GetStrValue(0)
 		v0, null0 := p0.GetStrValue(0)
 		if null0 {
 			nulls.AddRange(rsVec.GetNulls(), 0, uint64(length))
-		} else {
-			r := bytes.Compare(v0, lb) >= 0 && bytes.Compare(v0, ub) <= 0
-			rowCount := uint64(length)
-			for i := uint64(0); i < rowCount; i++ {
-				rss[i] = r
+			return nil
+		}
+		r := bytes.Compare(v0, lb) >= 0 && bytes.Compare(v0, ub) <= 0
+		rowCount := uint64(length)
+		for i := uint64(0); i < rowCount; i++ {
+			rss[i] = r
+		}
+		if r {
+			return nil
+		}
+		betweenCount := p1.GetSourceVector().Length()
+		for j := 1; j < betweenCount; j++ {
+			lb, _ = p1.GetStrValue(uint64(j))
+			ub, _ = p2.GetStrValue(uint64(j))
+			r = bytes.Compare(v0, lb) >= 0 && bytes.Compare(v0, ub) <= 0
+			if r {
+				for i := uint64(0); i < rowCount; i++ {
+					rss[i] = r
+				}
+				break
 			}
 		}
 		return nil
@@ -289,20 +377,36 @@ func opBetweenBytes(
 	if p0.WithAnyNullValue() {
 		nulls.Set(rsVec.GetNulls(), parameters[0].GetNulls())
 		rowCount := uint64(length)
-		for i := uint64(0); i < rowCount; i++ {
-			v0, null0 := p0.GetStrValue(i)
-			if null0 {
-				continue
+		betweenCount := p1.GetSourceVector().Length()
+		for j := 0; j < betweenCount; j++ {
+			lb, _ := p1.GetStrValue(uint64(j))
+			ub, _ := p2.GetStrValue(uint64(j))
+			for i := uint64(0); i < rowCount; i++ {
+				if rss[i] {
+					continue
+				}
+				v0, null0 := p0.GetStrValue(i)
+				if null0 {
+					continue
+				}
+				rss[i] = bytes.Compare(v0, lb) >= 0 && bytes.Compare(v0, ub) <= 0
 			}
-			rss[i] = bytes.Compare(v0, lb) >= 0 && bytes.Compare(v0, ub) <= 0
 		}
 		return nil
 	}
 
 	rowCount := uint64(length)
-	for i := uint64(0); i < rowCount; i++ {
-		v0, _ := p0.GetStrValue(i)
-		rss[i] = bytes.Compare(v0, lb) >= 0 && bytes.Compare(v0, ub) <= 0
+	betweenCount := p1.GetSourceVector().Length()
+	for j := 0; j < betweenCount; j++ {
+		lb, _ := p1.GetStrValue(uint64(j))
+		ub, _ := p2.GetStrValue(uint64(j))
+		for i := uint64(0); i < rowCount; i++ {
+			if rss[i] {
+				continue
+			}
+			v0, _ := p0.GetStrValue(i)
+			rss[i] = bytes.Compare(v0, lb) >= 0 && bytes.Compare(v0, ub) <= 0
+		}
 	}
 	return nil
 }

@@ -26,6 +26,7 @@ import (
 	"github.com/matrixorigin/matrixone/pkg/container/batch"
 	"github.com/matrixorigin/matrixone/pkg/container/types"
 	"github.com/matrixorigin/matrixone/pkg/container/vector"
+	"github.com/matrixorigin/matrixone/pkg/logutil"
 	"github.com/matrixorigin/matrixone/pkg/objectio"
 	"github.com/matrixorigin/matrixone/pkg/pb/plan"
 	"github.com/matrixorigin/matrixone/pkg/sql/plan/function"
@@ -199,6 +200,11 @@ func NewExpressionExecutor(proc *process.Process, planExpr *plan.Expr) (Expressi
 			}
 			executor.SetParameter(i, subExecutor)
 		}
+
+		if executor.fid == function.OR {
+			executor = tryMergeBetween(executor, proc.Mp())
+		}
+
 		return executor, nil
 	}
 
@@ -1492,4 +1498,52 @@ func isConst(expr *plan.Expr) bool {
 	default:
 		return true
 	}
+}
+
+func tryMergeBetween(executor *FunctionExpressionExecutor, mp *mpool.MPool) *FunctionExpressionExecutor {
+	leftBetween, ok := executor.parameterExecutor[0].(*FunctionExpressionExecutor)
+	if !ok || leftBetween.fid != function.BETWEEN {
+		return executor
+	}
+	rightBetween, ok := executor.parameterExecutor[1].(*FunctionExpressionExecutor)
+	if !ok || rightBetween.fid != function.BETWEEN {
+		return executor
+	}
+	leftCol, ok := leftBetween.parameterExecutor[0].(*ColumnExpressionExecutor)
+	if !ok {
+		return executor
+	}
+	rightCol, ok := rightBetween.parameterExecutor[0].(*ColumnExpressionExecutor)
+	if !ok || leftCol.relIndex != rightCol.relIndex || leftCol.colIndex != rightCol.colIndex {
+		return executor
+	}
+	leftparameter1, ok := leftBetween.parameterExecutor[1].(*FixedVectorExpressionExecutor)
+	if !ok {
+		return executor
+	}
+	leftparameter2, ok := leftBetween.parameterExecutor[2].(*FixedVectorExpressionExecutor)
+	if !ok {
+		return executor
+	}
+	rightparameter1, ok := leftBetween.parameterExecutor[1].(*FixedVectorExpressionExecutor)
+	if !ok {
+		return executor
+	}
+	rightparameter2, ok := leftBetween.parameterExecutor[2].(*FixedVectorExpressionExecutor)
+	if !ok {
+		return executor
+	}
+	sels := make([]int64, rightparameter1.resultVector.Length())
+	for i := range sels {
+		sels[i] = int64(i)
+	}
+	leftparameter1.resultVector.SetClass(vector.FLAT)
+	leftparameter1.resultVector.Union(rightparameter1.resultVector, sels, mp)
+	leftparameter2.resultVector.SetClass(vector.FLAT)
+	leftparameter2.resultVector.Union(rightparameter2.resultVector, sels, mp)
+
+	reuse.Free[FunctionExpressionExecutor](rightBetween, nil)
+	reuse.Free[FunctionExpressionExecutor](executor, nil)
+	logutil.Infof("Merge Between Once")
+	return leftBetween
 }
